@@ -1,0 +1,787 @@
+﻿<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ (PDF vs Kobo)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for XLSX/XLS parsing and exporting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PDF.js for PDF parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans Lao', sans-serif; background-color: #f1f5f9; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #3b82f6; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Highlight animation for searched PDF page */
+        .highlight-page {
+            animation: highlight-glow 2s ease-out;
+        }
+        @keyframes highlight-glow {
+            0% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6); }
+            100% { box-shadow: 0 0 0 0px transparent; }
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+    <!-- Top Navigation Header (Polished & Compact) -->
+    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-6 py-3 shadow-md flex-none">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+            <div>
+                <h1 class="text-lg md:text-xl font-bold tracking-wide flex items-center gap-2">
+                    <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ MAM</span>
+                </h1>
+            </div>
+            
+            <!-- Quick Stats Summary -->
+            <div id="quickStats" class="hidden bg-white/10 px-3 py-1.5 rounded-lg border border-white/20 text-xs font-medium">
+                ກຳລັງໂຫຼດຂໍ້ມູນ...
+            </div>
+        </div>
+    </div>
+
+    <!-- Upper Compact File Upload Controls -->
+    <div class="bg-white border-b border-slate-200 p-3 flex-none shadow-sm px-6">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-3 items-center justify-between">
+            <!-- PDF Upload (Narrowed) -->
+            <div class="flex items-center space-x-1.5 w-full lg:w-[22%]">
+                <span class="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap">1. ໄຟຣ PDF:</span>
+                <div class="relative flex-1 min-w-0">
+                    <input type="file" id="pdfFile" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div id="pdfBtnLabel" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate">
+                        ເລືອກໄຟຣ PDF ພະນັກງານ
+                    </div>
+                </div>
+            </div>
+
+            <!-- Excel Upload (Narrowed) -->
+            <div class="flex items-center space-x-1.5 w-full lg:w-[25%]">
+                <span class="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap">2. Kobo Excel:</span>
+                <div class="relative flex-1 min-w-0">
+                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div id="excelBtnLabel" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate">
+                        ເລືອກໄຟຣ Excel (.xlsx, .csv)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Name Selection Input (Narrowed) -->
+            <div class="flex items-center space-x-1.5 w-full lg:w-[25%]">
+                <span class="text-[11px] font-bold text-slate-500 uppercase whitespace-nowrap">3. ຊື່ພະນັກງານ:</span>
+                <input type="text" id="targetName" placeholder="ດຶງຊື່ອັດຕະໂນມັດ" class="flex-1 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] focus:ring-2 focus:ring-blue-500 outline-none font-medium">
+            </div>
+
+            <!-- Action Buttons (Start, Save to Master, Export) -->
+            <div class="flex items-center gap-2 w-full lg:w-[28%] justify-end">
+                <button id="processBtn" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap">
+                    ເລີ່ມກວດສອບ
+                </button>
+                <button id="saveToMasterBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap" title="ບັນທຶກຜົນການກວດຂອງຄົນນີ້ ເຂົ້າຖານຂໍ້ມູນລວມ">
+                    ບັນທຶກຜົນຄົນນີ້
+                </button>
+                <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap flex items-center justify-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>ສົ່ງອອກຜົນ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consolidated Master Session Banner -->
+    <div id="masterSessionBanner" class="hidden bg-slate-900 text-slate-300 px-6 py-1.5 flex-none text-[11px] font-medium flex items-center justify-between border-b border-slate-700">
+        <span class="flex items-center gap-2">
+            <span class="h-2 w-2 bg-emerald-400 rounded-full animate-ping"></span>
+            <span>ເຊດຊັນລວມ (Master Consolidation active)</span>
+        </span>
+        <span id="sessionListCount" class="font-bold text-emerald-400">ພະນັກງານທີ່ກວດແລ້ວ: 0 ຄົນ</span>
+        <button onclick="clearMasterSession()" class="text-rose-400 hover:text-rose-300 font-bold underline transition">ລຶບເຊດຊັນລວມ</button>
+    </div>
+
+    <!-- Main Workspace (Split-Screen View) -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- Left Pane: PDF Document Viewer (50% Width on large screens) -->
+        <div class="w-full lg:w-1/2 border-r border-slate-200 bg-slate-800 flex flex-col h-1/2 lg:h-full overflow-hidden">
+            <div class="bg-slate-900 text-slate-300 px-4 py-2 text-xs font-bold flex flex-wrap justify-between items-center gap-2 flex-none border-b border-slate-700">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                    <span>ຝັ່ງຊ້າຍ: ເອກະສານ PDF ຕົວຈິງ</span>
+                </span>
+                
+                <!-- Zoom Controls Toolbar -->
+                <div class="flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                    <span class="text-[10px] text-slate-400 mr-1 uppercase">ຊູມເບິ່ງ:</span>
+                    <button id="zoomOutBtn" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white p-1 rounded transition-colors" title="ຊູມອອກ">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"></path>
+                        </svg>
+                    </button>
+                    <span id="zoomPercent" class="font-mono text-xs text-slate-300 min-w-[36px] text-center">100%</span>
+                    <button id="zoomInBtn" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white p-1 rounded transition-colors" title="ຊູມເຂົ້າ">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                    </button>
+                    <button id="zoomResetBtn" class="bg-slate-600 hover:bg-slate-500 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors" title="ຂະໜາດປົກກະຕິ">
+                        100%
+                    </button>
+                </div>
+                
+                <span id="pdfPageCounter" class="font-mono text-slate-400">0 / 0 ໜ້າ</span>
+            </div>
+            
+            <!-- Scrollable PDF Canvas Container -->
+            <div id="pdfViewerContainer" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col items-center">
+                <!-- PDF Canvas Pages will be appended here -->
+                <div class="text-slate-400 text-center py-20">
+                    <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <p class="text-sm font-semibold">ຍັງບໍ່ມີເອກະສານ PDF</p>
+                    <p class="text-xs text-slate-500 mt-1">ອັບໂຫຼດໄຟຣ PDF ຂອງພະນັກງານເພື່ອສະແດງໜ້າເຈ້ຍຕົວຈິງຢູ່ບ່ອນນີ້</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane: Interactive Audit Table (50% Width) -->
+        <div class="w-full lg:w-1/2 flex flex-col h-1/2 lg:h-full bg-slate-50 overflow-hidden">
+            <div class="bg-slate-200 text-slate-700 px-4 py-2 text-xs font-bold flex justify-between items-center flex-none border-b border-slate-300">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
+                    <span>ຝັ່ງຂວາ: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບ (ຂໍ້ 301 - 374)</span>
+                </span>
+                <span class="text-xs text-slate-500 font-medium">*ຄລິກແຖວໃດໜຶ່ງເພື່ອເລື່ອນ PDF ໄປຫາໜ້າທີ່ມີຄຳຖາມນັ້ນ</span>
+            </div>
+
+            <!-- Loader inside table area -->
+            <div id="tableLoader" class="hidden flex-col items-center justify-center flex-1 py-12">
+                <div class="spinner mb-4"></div>
+                <p class="text-sm font-bold text-slate-600">ກຳລັງປະມວນຜົນຂໍ້ມູນ ແລະ ຄາດເດົາຄຳຕອບ 95%...</p>
+            </div>
+
+            <!-- Table Welcome Box -->
+            <div id="tableWelcome" class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+                <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p class="text-sm font-semibold">ລໍຖ້າການປະມວນຜົນ</p>
+                <p class="text-xs text-slate-500 mt-1">ອັບໂຫຼດທັງສອງໄຟຣ ແລ້ວກົດປຸ່ມ "ເລີ່ມກວດສອບ" ເພື່ອສະແດງຕາຕະລາງປຽບທຽບ</p>
+            </div>
+
+            <!-- Scrollable Table Container -->
+            <div id="tableContainer" class="hidden flex-1 overflow-y-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                    <thead class="bg-slate-100 sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 w-16">ຂໍ້ທີ</th>
+                            <th class="px-4 py-3 text-center font-bold text-slate-600 w-24">ສະຖານة</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 w-5/12">ຄຳຕອບ PDF (ຕິກເລືອກເອງ)</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 w-5/12">ຄຳຕອບໃນ Kobo (Excel)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody" class="bg-white divide-y divide-slate-200">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Hidden Error Alert Area -->
+    <div id="errorMessage" class="hidden fixed bottom-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-xl shadow-lg max-w-md z-50 text-xs font-semibold"></div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const pdfFileInput = document.getElementById('pdfFile');
+        const csvFileInput = document.getElementById('csvFile');
+        const targetNameInput = document.getElementById('targetName');
+        const processBtn = document.getElementById('processBtn');
+        const saveToMasterBtn = document.getElementById('saveToMasterBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const pdfViewerContainer = document.getElementById('pdfViewerContainer');
+        const tableContainer = document.getElementById('tableContainer');
+        const tableWelcome = document.getElementById('tableWelcome');
+        const tableLoader = document.getElementById('tableLoader');
+        const resultsBody = document.getElementById('resultsBody');
+        const errorMessage = document.getElementById('errorMessage');
+        const quickStats = document.getElementById('quickStats');
+        const pdfPageCounter = document.getElementById('pdfPageCounter');
+        
+        const pdfBtnLabel = document.getElementById('pdfBtnLabel');
+        const excelBtnLabel = document.getElementById('excelBtnLabel');
+        const masterSessionBanner = document.getElementById('masterSessionBanner');
+        const sessionListCount = document.getElementById('sessionListCount');
+
+        // Zoom Elements
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+        const zoomPercent = document.getElementById('zoomPercent');
+
+        let csvData = [];
+        let csvHeaders = [];
+        let questionPageMap = {}; // Maps question number to PDF page number
+        let koboAnswers = {}; // Raw answers from Kobo per question
+        let pdfAnswers = {}; // Human edited PDF answers (initialized using Auto-Guess)
+        let currentZoom = 100; // Zoom percentage state (Default 100%)
+
+        // MASTER SESSION DB (Stores data of multiple staff members)
+        let masterSession = {};
+
+        // PDF Auto-name extract
+        pdfFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                const nameOnly = fileName.replace(/^[0-9\s]+/, '').replace(/\.pdf$/i, '').trim();
+                targetNameInput.value = nameOnly;
+                pdfBtnLabel.textContent = `✓ ${fileName}`;
+            }
+        });
+
+        csvFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                excelBtnLabel.textContent = `✓ ${e.target.files[0].name}`;
+            }
+        });
+
+        // Zoom Management Functions
+        function applyZoom() {
+            zoomPercent.textContent = `${currentZoom}%`;
+            const wrappers = document.querySelectorAll('.pdf-page-wrapper');
+            wrappers.forEach(wrapper => {
+                const newWidth = Math.round(5.12 * currentZoom);
+                wrapper.style.width = '100%';
+                wrapper.style.maxWidth = `${newWidth}px`;
+            });
+        }
+
+        zoomInBtn.addEventListener('click', () => {
+            if (currentZoom < 250) {
+                currentZoom += 15;
+                applyZoom();
+            }
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            if (currentZoom > 50) {
+                currentZoom -= 15;
+                applyZoom();
+            }
+        });
+
+        zoomResetBtn.addEventListener('click', () => {
+            currentZoom = 100;
+            applyZoom();
+        });
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+            tableLoader.classList.add('hidden');
+            tableWelcome.classList.remove('hidden');
+        }
+
+        // Render PDF pages on the left panel
+        async function renderPDF(pdfFile) {
+            pdfViewerContainer.innerHTML = ''; // Clear original welcome
+            questionPageMap = {}; // Reset map
+            
+            const arrayBuffer = await pdfFile.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            
+            pdfPageCounter.textContent = `0 / ${pdf.numPages} ໜ້າ`;
+            
+            // Build question-to-page mapping by extracting text
+            for (let pNum = 1; pNum <= pdf.numPages; pNum++) {
+                const page = await pdf.getPage(pNum);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+
+                for (let qNum = 301; qNum <= 374; qNum++) {
+                    const qReg = new RegExp(`^${qNum}(?:\\.|\\s|$)`);
+                    const found = textContent.items.some(item => qReg.test(item.str.trim()));
+                    if (found) {
+                        questionPageMap[qNum] = pNum;
+                    }
+                }
+            }
+
+            // Render pages page-by-page to Canvas
+            for (let pNum = 1; pNum <= pdf.numPages; pNum++) {
+                const page = await pdf.getPage(pNum);
+                
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = "pdf-page-wrapper w-full max-w-lg bg-white p-3 rounded-xl shadow border border-slate-200 flex flex-col items-center relative transition-all";
+                pageWrapper.id = `pdf-page-${pNum}`;
+                
+                const label = document.createElement('div');
+                label.className = "w-full text-[10px] text-slate-400 font-bold border-b border-slate-100 pb-1.5 mb-2 flex justify-between";
+                label.innerHTML = `<span>ເອກະສານສະແກນ</span> <span>ໜ້າທີ ${pNum} / ${pdf.numPages}</span>`;
+                pageWrapper.appendChild(label);
+
+                const canvas = document.createElement('canvas');
+                canvas.className = "w-full h-auto block rounded";
+                pageWrapper.appendChild(canvas);
+                
+                pdfViewerContainer.appendChild(pageWrapper);
+
+                // PDFJS render logic
+                const scale = 1.5; // Optimized scale for viewing
+                const viewport = page.getViewport({ scale });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                pdfPageCounter.textContent = `${pNum} / ${pdf.numPages} ໜ້າ`;
+            }
+            
+            // Reapply current zoom after rendering all elements
+            applyZoom();
+        }
+
+        // Process button handler
+        processBtn.addEventListener('click', async () => {
+            if (!pdfFileInput.files.length || !csvFileInput.files.length) {
+                showError('ກະລຸນາອັບໂຫຼດທັງໄຟຣ PDF ພະນັກງານ ແລະ ໄຟຣ Kobo (Excel/CSV) ກ່ອນ.');
+                return;
+            }
+
+            const targetName = targetNameInput.value.trim();
+            if (!targetName) {
+                showError('ກະລຸນາໃສ່ຊື່ພະນັກງານເພື່ອເຮັດການຄົ້ນຫາ.');
+                return;
+            }
+
+            tableWelcome.classList.add('hidden');
+            tableContainer.classList.add('hidden');
+            tableLoader.classList.remove('hidden');
+            saveToMasterBtn.classList.add('hidden');
+            resultsBody.innerHTML = '';
+            koboAnswers = {};
+            pdfAnswers = {};
+
+            try {
+                // 1. Process PDF on the Left
+                await renderPDF(pdfFileInput.files[0]);
+
+                // 2. Parse Excel/CSV on the Right
+                const dataFile = csvFileInput.files[0];
+                const isExcel = dataFile.name.endsWith('.xlsx') || dataFile.name.endsWith('.xls');
+
+                await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    if (isExcel) {
+                        reader.readAsArrayBuffer(dataFile);
+                        reader.onload = function(e) {
+                            try {
+                                const data = new Uint8Array(e.target.result);
+                                const workbook = XLSX.read(data, { type: 'array' });
+                                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                                const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                                
+                                if (sheetData.length > 0) {
+                                    csvHeaders = sheetData[0].map(h => h ? h.toString().trim() : "");
+                                    csvData = [];
+                                    for (let i = 1; i < sheetData.length; i++) {
+                                        const rowObj = {};
+                                        for (let j = 0; j < csvHeaders.length; j++) {
+                                            rowObj[csvHeaders[j]] = sheetData[i][j] !== undefined ? sheetData[i][j].toString() : "";
+                                        }
+                                        csvData.push(rowObj);
+                                    }
+                                    resolve();
+                                } else { reject(new Error("Excel file empty")); }
+                            } catch (err) { reject(err); }
+                        };
+                    } else {
+                        reader.readAsText(dataFile, 'UTF-8');
+                        reader.onload = function(e) {
+                            Papa.parse(e.target.result, {
+                                header: true,
+                                skipEmptyLines: true,
+                                complete: function(results) {
+                                    csvData = results.data;
+                                    csvHeaders = results.meta.fields;
+                                    resolve();
+                                },
+                                error: function(err) { reject(err); }
+                            });
+                        };
+                    }
+                });
+
+                // Find the Target Kobo Row
+                let targetRow = null;
+                for (let row of csvData) {
+                    for (let key in row) {
+                        if (row[key] && row[key].toString().includes(targetName)) {
+                            targetRow = row;
+                            break;
+                        }
+                    }
+                    if (targetRow) break;
+                }
+
+                if (!targetRow) {
+                    showError(`ບໍ່ພົບຊື່ພະນັກງານ "${targetName}" ໃນໄຟຣ Kobo (Excel/CSV).`);
+                    return;
+                }
+
+                // 3. Populate Interactive Table Q301 - Q374
+                for (let qNum = 301; qNum <= 374; qNum++) {
+                    // Extract Raw Answer from Excel/Kobo
+                    let koboAnsRaw = "";
+                    let targetHeader = csvHeaders.find(h => {
+                        return new RegExp(`^${qNum}(?:\\.|_|\\s|$)`).test(h);
+                    });
+                    if (targetHeader) {
+                        koboAnsRaw = targetRow[targetHeader] ? targetRow[targetHeader].toString().trim() : "";
+                    } else {
+                        koboAnsRaw = "ບໍ່ພົບຂໍ້ມູນໃນ Kobo";
+                    }
+                    koboAnswers[qNum] = koboAnsRaw;
+
+                    // 4. SMART AUTO-GUESS (95% Accuracy Starting Point)
+                    if (koboAnsRaw !== "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
+                        pdfAnswers[qNum] = koboAnsRaw.includes("ບໍ່") ? "0" : "1";
+                    } else {
+                        pdfAnswers[qNum] = "1"; // default
+                    }
+
+                    // Render Row
+                    renderInteractiveRow(qNum);
+                }
+
+                updateStats();
+                tableLoader.classList.add('hidden');
+                tableContainer.classList.remove('hidden');
+                saveToMasterBtn.classList.remove('hidden'); // Reveal save to session database
+
+            } catch (err) {
+                console.error(err);
+                showError('ເກີດຂໍ້ຜິດພາດໃນການປະມວນຜົນເອກະສານ.');
+            }
+        });
+
+        // Function to render / update a row in the right-side table
+        function renderInteractiveRow(qNum) {
+            const koboAns = koboAnswers[qNum];
+            const pdfAns = pdfAnswers[qNum];
+            const hasBor = koboAns.includes("ບໍ່");
+
+            // Evaluate Match Condition
+            let isMatch = false;
+            if (pdfAns === "1" && !hasBor) {
+                isMatch = true;
+            } else if (pdfAns === "0" && hasBor) {
+                isMatch = true;
+            }
+
+            // Create or replace row
+            let tr = document.querySelector(`tr[data-qnum="${qNum}"]`);
+            const isNew = !tr;
+            if (isNew) {
+                tr = document.createElement('tr');
+                tr.dataset.qnum = qNum;
+            }
+
+            tr.className = `hover:bg-blue-50/60 cursor-pointer transition-colors text-slate-800 ${isMatch ? 'bg-emerald-50/20' : 'bg-red-50/30'}`;
+
+            // Status Badge
+            const statusHtml = isMatch 
+                ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold flex items-center justify-center gap-1 w-full max-w-[80px] mx-auto text-[10px]">
+                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                     <span>ກົງກັນ</span>
+                   </span>`
+                : `<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold flex items-center justify-center gap-1 w-full max-w-[80px] mx-auto text-[10px]">
+                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                     <span>ຜິດດ່ຽງ</span>
+                   </span>`;
+
+            // Active States for Edit Buttons
+            const active1Class = pdfAns === "1" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
+            const active0Class = pdfAns === "0" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
+
+            tr.innerHTML = `
+                <td class="px-4 py-3 font-bold text-slate-600">ຂໍ້ ${qNum}</td>
+                <td class="px-2 py-3 text-center">${statusHtml}</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center space-x-2">
+                        <!-- Toggle Options -->
+                        <div class="inline-flex rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                            <button onclick="overrideAnswer(${qNum}, '1', event)" class="px-3 py-1 text-[11px] font-bold border-r border-slate-200 transition-all ${active1Class}">1</button>
+                            <button onclick="overrideAnswer(${qNum}, '0', event)" class="px-3 py-1 text-[11px] font-bold transition-all ${active0Class}">0</button>
+                        </div>
+                        <span class="font-medium text-slate-700 truncate max-w-[160px] md:max-w-[200px]" title="${isMatch ? koboAns : (pdfAns === '1' ? '1: ໄດ້ຮັບ/ມີ' : '0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ')}">
+                            ${isMatch ? koboAns : (pdfAns === '1' ? '1: ໄດ້ຮັບ/ມີ' : '0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ')}
+                        </span>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-slate-600 font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title="${koboAns}">
+                    ${koboAns}
+                </td>
+            `;
+
+            // Add Click interaction to Scroll PDF to correct page
+            if (isNew) {
+                tr.addEventListener('click', () => {
+                    // Highlight selected row
+                    document.querySelectorAll('#resultsBody tr').forEach(row => row.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50/80'));
+                    tr.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50/80');
+
+                    // Auto scroll left PDF container to mapped page
+                    const pageNum = questionPageMap[qNum];
+                    if (pageNum) {
+                        const targetPageEl = document.getElementById(`pdf-page-${pageNum}`);
+                        if (targetPageEl) {
+                            targetPageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Visual glow effect
+                            targetPageEl.classList.remove('highlight-page');
+                            void targetPageEl.offsetWidth; // Trigger reflow for animation restart
+                            targetPageEl.classList.add('highlight-page');
+                        }
+                    }
+                });
+                resultsBody.appendChild(tr);
+            }
+        }
+
+        // Handle button clicks inside the row
+        window.overrideAnswer = function(qNum, value, event) {
+            event.stopPropagation(); // Avoid triggering parent row auto-scroll click
+            pdfAnswers[qNum] = value;
+            renderInteractiveRow(qNum);
+            updateStats();
+        };
+
+        // Recalculate stats
+        function updateStats() {
+            let total = 0;
+            let matched = 0;
+
+            for (let qNum = 301; qNum <= 374; qNum++) {
+                if (koboAnswers[qNum]) {
+                    total++;
+                    const hasBor = koboAnswers[qNum].includes("ບໍ່");
+                    if (pdfAnswers[qNum] === "1" && !hasBor) matched++;
+                    else if (pdfAnswers[qNum] === "0" && hasBor) matched++;
+                }
+            }
+
+            const mismatches = total - matched;
+            const percentage = total > 0 ? ((matched / total) * 100).toFixed(1) : 0;
+
+            quickStats.innerHTML = `
+                <div class="flex items-center gap-4 text-xs md:text-sm">
+                    <span>ກວດສອບແລ້ວ: <strong class="text-white">${total}</strong> ຂໍ້</span>
+                    <span class="text-emerald-300">✓ ກົງກັນ: <strong>${matched}</strong></span>
+                    <span class="text-red-300">✗ ຜິດດ່ຽງ: <strong>${mismatches}</strong></span>
+                    <span class="bg-white/20 px-2 py-0.5 rounded">ຄວາມຖືກຕ້ອງ: <strong>${percentage}%</strong></span>
+                </div>
+            `;
+            quickStats.classList.remove('hidden');
+        }
+
+        // 1. Save Active Staff Audit into Master Session DB
+        saveToMasterBtn.addEventListener('click', () => {
+            const staffName = targetNameInput.value.trim();
+            if (!staffName) return;
+
+            // Recalculate current session stats
+            let total = 0;
+            let matched = 0;
+            let records = [];
+
+            for (let qNum = 301; qNum <= 374; qNum++) {
+                if (koboAnswers[qNum]) {
+                    total++;
+                    const kVal = koboAnswers[qNum];
+                    const pVal = pdfAnswers[qNum] === "1" ? "1: ໄດ້ຮັບ/ມີ" : "0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
+                    const hasBor = kVal.includes("ບໍ່");
+                    let status = "ຜິດດ່ຽງ";
+                    
+                    if (pdfAnswers[qNum] === "1" && !hasBor) {
+                        status = "ກົງກັນ";
+                        matched++;
+                    } else if (pdfAnswers[qNum] === "0" && hasBor) {
+                        status = "ກົງກັນ";
+                        matched++;
+                    }
+
+                    records.push({
+                        qNum: `ຂໍ້ ${qNum}`,
+                        status: status,
+                        pdfAns: pVal,
+                        koboAns: kVal
+                    });
+                }
+            }
+
+            if (total === 0) {
+                showError("ບໍ່ມີຂໍ້ມູນການກວດສອບທີ່ຈະບັນທຶກ. ກະລຸນາກົດປຸ່ມ 'ເລີ່ມກວດສອບ' ກ່ອນ.");
+                return;
+            }
+
+            const accuracy = total > 0 ? parseFloat(((matched / total) * 100).toFixed(1)) : 0;
+
+            // Save to Master Session
+            masterSession[staffName] = {
+                staffName: staffName,
+                stats: {
+                    total: total,
+                    matched: matched,
+                    mismatched: total - matched,
+                    accuracy: accuracy
+                },
+                details: records
+            };
+
+            // Update Master Session banner
+            const totalAudited = Object.keys(masterSession).length;
+            sessionListCount.textContent = `ພະນັກງານທີ່ກວດແລ້ວ: ${totalAudited} ຄົນ`;
+            masterSessionBanner.classList.remove('hidden');
+
+            // Quick friendly message box
+            const alertBox = document.createElement('div');
+            alertBox.className = "fixed top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-full shadow-lg z-50 text-xs";
+            alertBox.textContent = `✓ ບັນທຶກຂໍ້ມູນຂອງ "${staffName}" ເຂົ້າຖານຂໍ້ມູນລວມສຳເລັດ!`;
+            document.body.appendChild(alertBox);
+            setTimeout(() => alertBox.remove(), 2500);
+        });
+
+        // 2. Wipe current master session
+        window.clearMasterSession = function() {
+            if (confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບເຊດຊັນລວມທັງໝົດ? ຂໍ້ມູນຂອງພະນັກງານທຸກຄົນທີ່ກວດຜ່ານມາຈະຖືກລຶບອອກ.")) {
+                masterSession = {};
+                masterSessionBanner.classList.add('hidden');
+            }
+        };
+
+        // 3. Export Consolidated Multi-Sheet Excel File
+        exportBtn.addEventListener('click', () => {
+            const masterCount = Object.keys(masterSession).length;
+
+            // FALLBACK CASE: If no master session data exists, do a quick single-sheet export of the current screen
+            if (masterCount === 0) {
+                const name = targetNameInput.value.trim() || "ພະນັກງານ";
+                const tableRows = [];
+                tableRows.push(["ຂໍ້ທີ", "ສະຖານະການກວດສອບ", "ຄຳຕອບ PDF (ຕິກເລືອກ)", "ຄຳຕອບໃນ Kobo (Excel)", "ຜົນການປຽບທຽບ"]);
+
+                let total = 0;
+                let matched = 0;
+
+                for (let qNum = 301; qNum <= 374; qNum++) {
+                    if (koboAnswers[qNum]) {
+                        total++;
+                        const kVal = koboAnswers[qNum];
+                        const pVal = pdfAnswers[qNum] === "1" ? "1: ໄດ້ຮັບ/ມີ" : "0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
+                        const hasBor = kVal.includes("ບໍ່");
+                        let matchStatus = "ຜິດດ່ຽງ";
+                        
+                        if (pdfAnswers[qNum] === "1" && !hasBor) {
+                            matchStatus = "ກົງກັນ";
+                            matched++;
+                        } else if (pdfAnswers[qNum] === "0" && hasBor) {
+                            matchStatus = "ກົງກັນ";
+                            matched++;
+                        }
+                        tableRows.push([`ຂໍ້ ${qNum}`, matchStatus, pVal, kVal, matchStatus]);
+                    }
+                }
+
+                if (total === 0) {
+                    showError("ບໍ່ມີຂໍ້ມູນທີ່ຈະສົ່ງອອກ. ກະລຸນາກົດປຸ່ມ 'ເລີ່ມກວດສອບ' ກ່ອນ.");
+                    return;
+                }
+
+                tableRows.push([]);
+                tableRows.push(["ບົດສະຫຼຸບຜົນການກວດສອບຄວາມຖືກຕ້ອງ"]);
+                tableRows.push(["ຊື່ພະນັກງານ", name]);
+                tableRows.push(["ຈຳນວນຂໍ້ທີ່ກວດສອບທັງໝົດ", `${total} ຂໍ້`]);
+                tableRows.push(["ຈຳນວນຂໍ້ທີ່ ກົງກັນ", `${matched} ຂໍ້`]);
+                tableRows.push(["ຈຳນວນຂໍ້ທີ່ ຜິດດ່ຽງ", `${total - matched} ຂໍ້`]);
+                tableRows.push(["ອັດຕາຄວາມຖືກຕ້ອງ (Accuracy)", `${((matched / total) * 100).toFixed(1)}%`]);
+
+                const worksheet = XLSX.utils.aoa_to_sheet(tableRows);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Report");
+                XLSX.writeFile(workbook, `MAM_Audit_Report_${name.replace(/\s+/g, '_')}.xlsx`);
+                return;
+            }
+
+            // EXPORT MULTI-SHEET CONSOLIDATED REPORT
+            const workbook = XLSX.utils.book_new();
+
+            // SHEET 1: Master Summary (ບົດສະຫຼຸບລວມຂອງທຸກຄົນ)
+            const summaryRows = [];
+            summaryRows.push(["ບົດສະຫຼຸບຜົນການກວດສອບຄຸນນະພາບຂໍ້ມູນ (Consolidated Quality Audit Summary)"]);
+            summaryRows.push([`ວັນທີສົ່ງອອກ: ${new Date().toLocaleDateString('lo-LA')}`, `ຈຳນວນພະນັກງານທັງໝົດ: ${masterCount} ຄົນ`]);
+            summaryRows.push([]); // spacer
+            summaryRows.push(["ລຳດັບ", "ຊື່ພະນັກງານສຸກສາລາ", "ຈຳນວນຂໍ້ກວດສອບ", "ກົງກັນ (ຂໍ້)", "ຜິດດ່ຽງ (ຂໍ້)", "ອັດຕາຄວາມຖືກຕ້ອງ (%)"]);
+
+            let index = 1;
+            for (let name in masterSession) {
+                const staff = masterSession[name];
+                summaryRows.push([
+                    index++,
+                    staff.staffName,
+                    staff.stats.total,
+                    staff.stats.matched,
+                    staff.stats.mismatched,
+                    `${staff.stats.accuracy}%`
+                ]);
+            }
+
+            const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
+            XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary (ບົດສະຫຼຸບລວມ)");
+
+            // SHEET 2: Consolidated Details (ລາຍລະອຽດແຕ່ລະຂໍ້ຂອງທຸກຄົນ)
+            const detailRows = [];
+            detailRows.push(["ລາຍລະອຽດຜົນການກວດສອບແຕ່ລະຂໍ້ (All Consolidated Audit Details)"]);
+            detailRows.push([]);
+            detailRows.push(["ຊື່ພະນັກງານ", "ຂໍ້ທີ", "ສະຖານະການປຽບທຽບ", "ຄຳຕອບ PDF (ຕົວຈິງ)", "ຄຳຕອບໃນ Kobo (Excel)"]);
+
+            for (let name in masterSession) {
+                const staff = masterSession[name];
+                for (let rec of staff.details) {
+                    detailRows.push([
+                        staff.staffName,
+                        rec.qNum,
+                        rec.status,
+                        rec.pdfAns,
+                        rec.koboAns
+                    ]);
+                }
+            }
+
+            const detailsSheet = XLSX.utils.aoa_to_sheet(detailRows);
+            XLSX.utils.book_append_sheet(workbook, detailsSheet, "All_Details (ລາຍລະອຽດ)");
+
+            // Write File
+            XLSX.writeFile(workbook, `MAM_Consolidated_Audit_Report_${masterCount}_Staff.xlsx`);
+        });
+    </script>
+</body>
+</html>
