@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="lo">
 <head>
     <meta charset="UTF-8">
@@ -152,7 +152,7 @@
                 <!-- PDF Canvas Pages will be appended here -->
                 <div class="text-slate-400 text-center py-20">
                     <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414a1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                     </svg>
                     <p class="text-sm font-semibold">ຍັງບໍ່ມີເອກະສານ PDF</p>
                     <p class="text-xs text-slate-500 mt-1">ອັບໂຫຼດໄຟຣ PDF ຂອງພະນັກງານເພື່ອສະແດງໜ້າເຈ້ຍຕົວຈິງຢູ່ບ່ອນນີ້</p>
@@ -191,7 +191,7 @@
                     <thead class="bg-slate-100 sticky top-0 z-10 shadow-sm">
                         <tr>
                             <th class="px-4 py-3 text-left font-bold text-slate-600 w-16">ຂໍ້ທີ</th>
-                            <th class="px-4 py-3 text-center font-bold text-slate-600 w-24">ສະຖານة</th>
+                            <th class="px-4 py-3 text-center font-bold text-slate-600 w-24">ສະຖານະ</th>
                             <th class="px-4 py-3 text-left font-bold text-slate-600 w-5/12">ຄຳຕອບ PDF (ຕິກເລືອກເອງ)</th>
                             <th class="px-4 py-3 text-left font-bold text-slate-600 w-5/12">ຄຳຕອບໃນ Kobo (Excel)</th>
                         </tr>
@@ -292,6 +292,53 @@
             currentZoom = 100;
             applyZoom();
         });
+
+        // Smart Lao Opposites Generator Function (Reverses meaning when selecting '0' or '1')
+        function getPDFOppositeText(text, targetVal) {
+            if (!text || text === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
+                return targetVal === "1" ? "ໄດ້ຮັບ/ມີ" : "ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
+            }
+            
+            let cleanText = text.trim();
+            // Check if it already contains negative prefix "ບໍ່"
+            let hasBor = cleanText.startsWith("ບໍ່") || cleanText.includes(" ບໍ່") || cleanText.includes("\nບໍ່");
+            
+            if (targetVal === "1") {
+                if (!hasBor) {
+                    return cleanText; // positive statement is kept
+                }
+                // Convert negative to positive
+                let posText = cleanText;
+                if (posText.startsWith("ບໍ່ໄດ້")) {
+                    posText = posText.replace(/^ບໍ່ໄດ້/, "ໄດ້");
+                } else if (posText.startsWith("ບໍ່")) {
+                    posText = posText.replace(/^ບໍ່/, "");
+                } else if (posText.includes("ບໍ່ໄດ້")) {
+                    posText = posText.replace(/ບໍ່ໄດ້/g, "ໄດ້");
+                } else if (posText.includes("ບໍ່")) {
+                    posText = posText.replace(/ບໍ່/g, "");
+                }
+                return posText;
+            } else { // targetVal === "0"
+                if (hasBor) {
+                    return cleanText; // negative statement is kept
+                }
+                // Convert positive to negative (The opposites rule requested by user)
+                let negText = cleanText;
+                if (negText.startsWith("ໄດ້")) {
+                    negText = negText.replace(/^ໄດ້/, "ບໍ່ໄດ້");
+                } else if (negText.startsWith("ຖືກຕ້ອງ")) {
+                    negText = "ບໍ່" + negText;
+                } else if (negText.startsWith("ມີ")) {
+                    negText = negText.replace(/^ມີ/, "ບໍ່ມີ");
+                } else if (negText.startsWith("ແຕ້ມເສັ້ນສະແດງ")) {
+                    negText = "ບໍ່ໄດ້" + negText;
+                } else {
+                    negText = "ບໍ່" + negText;
+                }
+                return negText;
+            }
+        }
 
         function showError(msg) {
             errorMessage.textContent = msg;
@@ -523,6 +570,9 @@
             const active1Class = pdfAns === "1" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
             const active0Class = pdfAns === "0" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
 
+            // Resolve the exact opposite value dynamically based on Lao prefix rules!
+            const pdfDisplayVal = getPDFOppositeText(koboAns, pdfAns);
+
             tr.innerHTML = `
                 <td class="px-4 py-3 font-bold text-slate-600">ຂໍ້ ${qNum}</td>
                 <td class="px-2 py-3 text-center">${statusHtml}</td>
@@ -533,8 +583,8 @@
                             <button onclick="overrideAnswer(${qNum}, '1', event)" class="px-3 py-1 text-[11px] font-bold border-r border-slate-200 transition-all ${active1Class}">1</button>
                             <button onclick="overrideAnswer(${qNum}, '0', event)" class="px-3 py-1 text-[11px] font-bold transition-all ${active0Class}">0</button>
                         </div>
-                        <span class="font-medium text-slate-700 truncate max-w-[160px] md:max-w-[200px]" title="${isMatch ? koboAns : (pdfAns === '1' ? '1: ໄດ້ຮັບ/ມີ' : '0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ')}">
-                            ${isMatch ? koboAns : (pdfAns === '1' ? '1: ໄດ້ຮັບ/ມີ' : '0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ')}
+                        <span class="font-medium text-slate-700 truncate max-w-[160px] md:max-w-[200px]" title="${pdfDisplayVal}">
+                            ${pdfDisplayVal}
                         </span>
                     </div>
                 </td>
@@ -604,7 +654,7 @@
             quickStats.classList.remove('hidden');
         }
 
-        // 1. Save Active Staff Audit into Master Session DB
+        // Save Active Staff Audit into Master Session DB
         saveToMasterBtn.addEventListener('click', () => {
             const staffName = targetNameInput.value.trim();
             if (!staffName) return;
@@ -618,7 +668,8 @@
                 if (koboAnswers[qNum]) {
                     total++;
                     const kVal = koboAnswers[qNum];
-                    const pVal = pdfAnswers[qNum] === "1" ? "1: ໄດ້ຮັບ/ມີ" : "0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
+                    // Dynamic opposite text resolution for exported sheets!
+                    const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum]);
                     const hasBor = kVal.includes("ບໍ່");
                     let status = "ຜິດດ່ຽງ";
                     
@@ -671,7 +722,7 @@
             setTimeout(() => alertBox.remove(), 2500);
         });
 
-        // 2. Wipe current master session
+        // Wipe current master session
         window.clearMasterSession = function() {
             if (confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບເຊດຊັນລວມທັງໝົດ? ຂໍ້ມູນຂອງພະນັກງານທຸກຄົນທີ່ກວດຜ່ານມາຈະຖືກລຶບອອກ.")) {
                 masterSession = {};
@@ -679,7 +730,7 @@
             }
         };
 
-        // 3. Export Consolidated Multi-Sheet Excel File
+        // Export Consolidated Multi-Sheet Excel File
         exportBtn.addEventListener('click', () => {
             const masterCount = Object.keys(masterSession).length;
 
@@ -687,7 +738,7 @@
             if (masterCount === 0) {
                 const name = targetNameInput.value.trim() || "ພະນັກງານ";
                 const tableRows = [];
-                tableRows.push(["ຂໍ້ທີ", "ສະຖານະການກວດສອບ", "ຄຳຕອບ PDF (ຕິກເລືອກ)", "ຄຳຕອບໃນ Kobo (Excel)", "ຜົນການປຽບທຽບ"]);
+                tableRows.push(["ຂໍ້ທີ", "ສະຖານະການກວດສອບ", "ຄຳຕອບ PDF (ຕົວຈິງ)", "ຄຳຕອບໃນ Kobo (Excel)", "ຜົນການປຽບທຽບ"]);
 
                 let total = 0;
                 let matched = 0;
@@ -696,7 +747,7 @@
                     if (koboAnswers[qNum]) {
                         total++;
                         const kVal = koboAnswers[qNum];
-                        const pVal = pdfAnswers[qNum] === "1" ? "1: ໄດ້ຮັບ/ມີ" : "0: ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
+                        const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum]);
                         const hasBor = kVal.includes("ບໍ່");
                         let matchStatus = "ຜິດດ່ຽງ";
                         
