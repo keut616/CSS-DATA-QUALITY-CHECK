@@ -321,9 +321,9 @@
                 return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 359 (User Request - Swapped)
+            // Rule Override for Question 359 (User Request - Swapped back to standard requested order)
             if (qNum === 359) {
-                return targetVal === "1" ? "ເວົ້າບໍ່ຖຶກຕ້ອງ" : "ເວົ້າຖືກຕ້ອງ";
+                return targetVal === "1" ? "ເວົ້າຖຶກຕ້ອງ" : "ເວົ້າບໍ່ຖຶກຕ້ອງ";
             }
 
             // Rule Override for Question 360 (User Request)
@@ -645,7 +645,7 @@
             const pdfDisplayVal = getPDFOppositeText(koboAns, pdfAns, qNum);
 
             tr.innerHTML = `
-                <td class="px-4 py-3 font-bold text-slate-600">ຂໍ́ ${qNum}</td>
+                <td class="px-4 py-3 font-bold text-slate-600">ຂໍ້ ${qNum}</td>
                 <td class="px-2 py-3 text-center">${statusHtml}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center space-x-2">
