@@ -109,7 +109,7 @@
     <div id="masterSessionBanner" class="hidden bg-slate-900 text-slate-300 px-6 py-1.5 flex-none text-[11px] font-medium flex items-center justify-between border-b border-slate-700">
         <span class="flex items-center gap-2">
             <span class="h-2 w-2 bg-emerald-400 rounded-full animate-ping"></span>
-            <span>ເຊດຊັນລວມ (Master Consolidation active)</span>
+            <span>ເຊດຊັນລວມ (Master Consolidation active - ເຊບລົງບຣາວເຊີອັດຕະໂນມັດ)</span>
         </span>
         <span id="sessionListCount" class="font-bold text-emerald-400">ພະນັກງານທີ່ກວດແລ້ວ: 0 ຄົນ</span>
         <button onclick="clearMasterSession()" class="text-rose-400 hover:text-rose-300 font-bold underline transition">ລຶບເຊດຊັນລວມ</button>
@@ -166,7 +166,7 @@
             <div class="bg-slate-200 text-slate-700 px-4 py-2 text-xs font-bold flex justify-between items-center flex-none border-b border-slate-300">
                 <span class="flex items-center gap-1.5">
                     <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-                    <span>ຝັ່ງຂວา: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບ (ຂໍ້ 301 - 374)</span>
+                    <span>ຝັ່ງຂວາ: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບ (ຂໍ້ 301 - 374)</span>
                 </span>
                 <span class="text-xs text-slate-500 font-medium">*ຄລິກແຖວໃດໜຶ່ງເພື່ອເລື່ອນ PDF ໄປຫາໜ້າທີ່ມີຄຳຖາມນັ້ນ</span>
             </div>
@@ -245,8 +245,20 @@
         let pdfAnswers = {}; // Human edited PDF answers (initialized using Auto-Guess)
         let currentZoom = 100; // Zoom percentage state (Default 100%)
 
-        // MASTER SESSION DB (Stores data of multiple staff members)
         let masterSession = {};
+        try {
+            const savedSession = localStorage.getItem('mam_master_session');
+            if (savedSession) {
+                masterSession = JSON.parse(savedSession);
+                const totalAudited = Object.keys(masterSession).length;
+                if (totalAudited > 0) {
+                    sessionListCount.textContent = `ພະນັກງານທີ່ກວດແລ້ວ: ${totalAudited} ຄົນ`;
+                    masterSessionBanner.classList.remove('hidden');
+                }
+            }
+        } catch (e) {
+            console.error("ບໍ່ສາມາດດຶງຂໍ້ມູນເຊດຊັນລວມເກົ່າຈາກ LocalStorage ໄດ້:", e);
+        }
 
         // PDF Auto-name extract
         pdfFileInput.addEventListener('change', (e) => {
@@ -294,74 +306,73 @@
             applyZoom();
         });
 
-        // Smart Lao Opposites Generator Function (Reverses meaning when selecting '0' or '1')
         function getPDFOppositeText(text, targetVal, qNum) {
             // Rule Override for Question 327
             if (qNum === 327) {
                 return targetVal === "1" ? "ບັນທຶກຂໍ້ມູນທັງໝົດຢ່າງຖືກຕ້ອງ" : "ບັນທຶກຂໍ້ມູນບໍ່ຖຶກທັງໝົດ";
             }
             
-            // Rule Override for Question 352 (User Request)
+            // Rule Override for Question 352
             if (qNum === 352) {
                 return targetVal === "1" ? "ໄດ້ບັນທຶກວັກຊີນທີ່ໄດ້ສັກໄດ້ຢ່າງຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖືກຕ້ອງ";
             }
 
-            // Rule Override for Question 353 (User Request)
+            // Rule Override for Question 353
             if (qNum === 353) {
                 return targetVal === "1" ? "ໄດ້ກວດຖຶກຕ້ອງ" : "ໄດ້ກວດບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 354 (User Request)
+            // Rule Override for Question 354
             if (qNum === 354) {
                 return targetVal === "1" ? "ບໍ່ໃຫ້ຖຶກຕ້ອງ" : "ໃຫ້ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 355 (User Request)
+            // Rule Override for Question 355
             if (qNum === 355) {
                 return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 359 (User Request - Swapped back to standard requested order)
+            // Rule Override for Question 359
             if (qNum === 359) {
                 return targetVal === "1" ? "ເວົ້າຖຶກຕ້ອງ" : "ເວົ້າບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 360 (User Request)
+            // Rule Override for Question 360
             if (qNum === 360) {
                 return targetVal === "1" ? "ແມ່ນ, ເດັກເຕີບໂຕຊ້າ" : "ບໍ່ ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
             }
 
-            // Rule Override for Question 361 (User Request)
+            // Rule Override for Question 361
             if (qNum === 361) {
                 return targetVal === "1" ? "ບໍ່ມີປັດໃຈສ່ຽງ" : "ມີປັດໃຈສ່ຽງ";
             }
 
-            // Rule Override for Question 363 (User Request)
+            // Rule Override for Question 363
             if (qNum === 363) {
                 return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 364 (User Request)
+            // Rule Override for Question 364
             if (qNum === 364) {
                 return targetVal === "1" ? "ຄວາມສ່ຽງຕໍ່າ" : "ຄວາມສ່ຽງກາງ, ຄວາມສ່ຽງສູງ";
             }
 
-            // Rule Override for Question 365 (User Request - Swapped)
+            // Rule Override for Question 365
             if (qNum === 365) {
                 return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
             }
 
-            // Rule Override for Question 366 (User Request)
+            // Rule Override for Question 366
             if (qNum === 366) {
                 return targetVal === "1" ? "ໃຫ້ການປິ່ນປົວຖືກຕ້ອງ" : "ໃຫ້ການປິ່ນປົວບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 368 (User Request)
+            // Rule Override for Question 368
             if (qNum === 368) {
                 return targetVal === "1" ? "ບັນທຶກຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
             }
 
-            // Rule Override for Question 372 (User Request)
+            // Rule Override for Question 372
             if (qNum === 372) {
                 return targetVal === "1" ? "ແມ່ນ" : "ບໍ່ແມ່ນ";
             }
@@ -371,14 +382,10 @@
             }
             
             let cleanText = text.trim();
-            // Check if it already contains negative prefix "ບໍ່"
             let hasBor = cleanText.startsWith("ບໍ່") || cleanText.includes(" ບໍ່") || cleanText.includes("\nບໍ່");
             
             if (targetVal === "1") {
-                if (!hasBor) {
-                    return cleanText; // positive statement is kept
-                }
-                // Convert negative to positive
+                if (!hasBor) return cleanText;
                 let posText = cleanText;
                 if (posText.startsWith("ບໍ່ໄດ້")) {
                     posText = posText.replace(/^ບໍ່ໄດ້/, "ໄດ້");
@@ -390,11 +397,8 @@
                     posText = posText.replace(/ບໍ່/g, "");
                 }
                 return posText;
-            } else { // targetVal === "0"
-                if (hasBor) {
-                    return cleanText; // negative statement is kept
-                }
-                // Convert positive to negative (The opposites rule requested by user)
+            } else {
+                if (hasBor) return cleanText;
                 let negText = cleanText;
                 if (negText.startsWith("ໄດ້")) {
                     negText = negText.replace(/^ໄດ້/, "ບໍ່ໄດ້");
@@ -411,10 +415,6 @@
             }
         }
 
-        /**
-         * Smart Match Logic: Checks if PDF selection matches the KOBO Excel answer correctly.
-         * Accounts for standard polarity, flipped polarity (Q354, Q361, Q365), and custom text mapping (Q364).
-         */
         function checkIsMatch(koboAns, pdfAns, qNum) {
             if (!koboAns || koboAns === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
                 return false;
@@ -423,12 +423,12 @@
             const cleanKobo = koboAns.trim();
             const pdfText = getPDFOppositeText(cleanKobo, pdfAns, qNum).trim();
             
-            // 1. Direct Text Comparison (handles most custom overrides perfectly)
+            // 1. Direct Text Comparison (custom text maps)
             if (pdfText === cleanKobo) {
                 return true;
             }
             
-            // 2. Special Case for Q364 (Risk levels: Low vs High/Med)
+            // 2. Special Case for Q364 (Risk levels)
             if (qNum === 364) {
                 const isLowRisk = cleanKobo.includes("ຕໍ່າ");
                 const isHighOrMedRisk = cleanKobo.includes("ກາງ") || cleanKobo.includes("ສູງ");
@@ -462,17 +462,15 @@
             tableWelcome.classList.remove('hidden');
         }
 
-        // Render PDF pages on the left panel
         async function renderPDF(pdfFile) {
-            pdfViewerContainer.innerHTML = ''; // Clear original welcome
-            questionPageMap = {}; // Reset map
+            pdfViewerContainer.innerHTML = ''; 
+            questionPageMap = {}; 
             
             const arrayBuffer = await pdfFile.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             
             pdfPageCounter.textContent = `0 / ${pdf.numPages} ໜ້າ`;
             
-            // Build question-to-page mapping by extracting text
             for (let pNum = 1; pNum <= pdf.numPages; pNum++) {
                 const page = await pdf.getPage(pNum);
                 const textContent = await page.getTextContent();
@@ -487,7 +485,6 @@
                 }
             }
 
-            // Render pages page-by-page to Canvas
             for (let pNum = 1; pNum <= pdf.numPages; pNum++) {
                 const page = await pdf.getPage(pNum);
                 
@@ -506,8 +503,7 @@
                 
                 pdfViewerContainer.appendChild(pageWrapper);
 
-                // PDFJS render logic
-                const scale = 1.5; // Optimized scale for viewing
+                const scale = 1.5; 
                 const viewport = page.getViewport({ scale });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
@@ -516,12 +512,9 @@
                 await page.render({ canvasContext: ctx, viewport }).promise;
                 pdfPageCounter.textContent = `${pNum} / ${pdf.numPages} ໜ້າ`;
             }
-            
-            // Reapply current zoom after rendering all elements
             applyZoom();
         }
 
-        // Process button handler
         processBtn.addEventListener('click', async () => {
             if (!pdfFileInput.files.length || !csvFileInput.files.length) {
                 showError('ກະລຸນາອັບໂຫຼດທັງໄຟຣ PDF ພະນັກງານ ແລະ ໄຟຣ Kobo (Excel/CSV) ກ່ອນ.');
@@ -543,10 +536,8 @@
             pdfAnswers = {};
 
             try {
-                // 1. Process PDF on the Left
                 await renderPDF(pdfFileInput.files[0]);
 
-                // 2. Parse Excel/CSV on the Right
                 const dataFile = csvFileInput.files[0];
                 const isExcel = dataFile.name.endsWith('.xlsx') || dataFile.name.endsWith('.xls');
 
@@ -592,7 +583,6 @@
                     }
                 });
 
-                // Find the Target Kobo Row
                 let targetRow = null;
                 for (let row of csvData) {
                     for (let key in row) {
@@ -609,9 +599,7 @@
                     return;
                 }
 
-                // 3. Populate Interactive Table Q301 - Q374
                 for (let qNum = 301; qNum <= 374; qNum++) {
-                    // Extract Raw Answer from Excel/Kobo
                     let koboAnsRaw = "";
                     let targetHeader = csvHeaders.find(h => {
                         return new RegExp(`^${qNum}(?:\\.|_|\\s|$)`).test(h);
@@ -623,21 +611,25 @@
                     }
                     koboAnswers[qNum] = koboAnsRaw;
 
-                    // 4. SMART AUTO-GUESS (95% Accuracy Starting Point)
                     if (koboAnsRaw !== "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
-                        pdfAnswers[qNum] = koboAnsRaw.includes("ບໍ່") ? "0" : "1";
+                        const flippedQuestions = [354, 361, 365];
+                        const hasBor = koboAnsRaw.includes("ບໍ່");
+                        if (flippedQuestions.includes(qNum)) {
+                            pdfAnswers[qNum] = hasBor ? "1" : "0";
+                        } else {
+                            pdfAnswers[qNum] = hasBor ? "0" : "1";
+                        }
                     } else {
-                        pdfAnswers[qNum] = "1"; // default
+                        pdfAnswers[qNum] = "1"; 
                     }
 
-                    // Render Row
                     renderInteractiveRow(qNum);
                 }
 
                 updateStats();
                 tableLoader.classList.add('hidden');
                 tableContainer.classList.remove('hidden');
-                saveToMasterBtn.classList.remove('hidden'); // Reveal save to session database
+                saveToMasterBtn.classList.remove('hidden'); 
 
             } catch (err) {
                 console.error(err);
@@ -645,15 +637,12 @@
             }
         });
 
-        // Function to render / update a row in the right-side table
         function renderInteractiveRow(qNum) {
             const koboAns = koboAnswers[qNum];
             const pdfAns = pdfAnswers[qNum];
 
-            // Evaluate Match Condition using smart helper function
             const isMatch = checkIsMatch(koboAns, pdfAns, qNum);
 
-            // Create or replace row
             let tr = document.querySelector(`tr[data-qnum="${qNum}"]`);
             const isNew = !tr;
             if (isNew) {
@@ -663,7 +652,6 @@
 
             tr.className = `hover:bg-blue-50/60 cursor-pointer transition-colors text-slate-800 ${isMatch ? 'bg-emerald-50/20' : 'bg-red-50/30'}`;
 
-            // Status Badge
             const statusHtml = isMatch 
                 ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold flex items-center justify-center gap-1 w-full max-w-[80px] mx-auto text-[10px]">
                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
@@ -674,11 +662,9 @@
                      <span>ຜິດດ່ຽງ</span>
                    </span>`;
 
-            // Active States for Edit Buttons
             const active1Class = pdfAns === "1" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
             const active0Class = pdfAns === "0" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
 
-            // Resolve the exact opposite value dynamically based on Lao prefix rules!
             const pdfDisplayVal = getPDFOppositeText(koboAns, pdfAns, qNum);
 
             tr.innerHTML = `
@@ -686,7 +672,6 @@
                 <td class="px-2 py-3 text-center">${statusHtml}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center space-x-2">
-                        <!-- Toggle Options -->
                         <div class="inline-flex rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                             <button onclick="overrideAnswer(${qNum}, '1', event)" class="px-3 py-1 text-[11px] font-bold border-r border-slate-200 transition-all ${active1Class}">1</button>
                             <button onclick="overrideAnswer(${qNum}, '0', event)" class="px-3 py-1 text-[11px] font-bold transition-all ${active0Class}">0</button>
@@ -701,23 +686,18 @@
                 </td>
             `;
 
-            // Add Click interaction to Scroll PDF to correct page
             if (isNew) {
                 tr.addEventListener('click', () => {
-                    // Highlight selected row
                     document.querySelectorAll('#resultsBody tr').forEach(row => row.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50/80'));
                     tr.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50/80');
 
-                    // Auto scroll left PDF container to mapped page
                     const pageNum = questionPageMap[qNum];
                     if (pageNum) {
                         const targetPageEl = document.getElementById(`pdf-page-${pageNum}`);
                         if (targetPageEl) {
                             targetPageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            
-                            // Visual glow effect
                             targetPageEl.classList.remove('highlight-page');
-                            void targetPageEl.offsetWidth; // Trigger reflow for animation restart
+                            void targetPageEl.offsetWidth; 
                             targetPageEl.classList.add('highlight-page');
                         }
                     }
@@ -726,15 +706,13 @@
             }
         }
 
-        // Handle button clicks inside the row
         window.overrideAnswer = function(qNum, value, event) {
-            event.stopPropagation(); // Avoid triggering parent row auto-scroll click
+            event.stopPropagation(); 
             pdfAnswers[qNum] = value;
             renderInteractiveRow(qNum);
             updateStats();
         };
 
-        // Recalculate stats
         function updateStats() {
             let total = 0;
             let matched = 0;
@@ -762,12 +740,10 @@
             quickStats.classList.remove('hidden');
         }
 
-        // Save Active Staff Audit into Master Session DB
         saveToMasterBtn.addEventListener('click', () => {
             const staffName = targetNameInput.value.trim();
             if (!staffName) return;
 
-            // Recalculate current session stats
             let total = 0;
             let matched = 0;
             let records = [];
@@ -776,7 +752,6 @@
                 if (koboAnswers[qNum]) {
                     total++;
                     const kVal = koboAnswers[qNum];
-                    // Dynamic opposite text resolution for exported sheets!
                     const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum], qNum);
                     let status = "ຜິດດ່ຽງ";
                     
@@ -801,7 +776,6 @@
 
             const accuracy = total > 0 ? parseFloat(((matched / total) * 100).toFixed(1)) : 0;
 
-            // Save to Master Session
             masterSession[staffName] = {
                 staffName: staffName,
                 stats: {
@@ -813,32 +787,36 @@
                 details: records
             };
 
-            // Update Master Session banner
+            // Write session to LocalStorage Database
+            try {
+                localStorage.setItem('mam_master_session', JSON.stringify(masterSession));
+            } catch (e) {
+                console.error("ບໍ່ສາມາດບັນທຶກເຊດຊັນລວມລົງ LocalStorage ໄດ້:", e);
+            }
+
             const totalAudited = Object.keys(masterSession).length;
             sessionListCount.textContent = `ພະນັກງານທີ່ກວດແລ້ວ: ${totalAudited} ຄົນ`;
             masterSessionBanner.classList.remove('hidden');
 
-            // Quick friendly message box
             const alertBox = document.createElement('div');
             alertBox.className = "fixed top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-full shadow-lg z-50 text-xs";
-            alertBox.textContent = `✓ ບັນທຶກຂໍ້ມູນຂອງ "${staffName}" ເຂົ້າຖານຂໍ້ມູນລວມສຳເລັດ!`;
+            alertBox.textContent = `✓ ບັນທຶກຂໍ້ມູນຂອງ "${staffName}" ເຂົ້າຖານຂໍ້ມູນລວມສຳເລັດ! (ປ້ອງກັນຂໍ້ມູນສູນຫາຍແລ້ວ)`;
             document.body.appendChild(alertBox);
             setTimeout(() => alertBox.remove(), 2500);
         });
 
         // Wipe current master session
         window.clearMasterSession = function() {
-            if (confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບເຊດຊັນລວມທັງໝົດ? ຂໍ້ມູນຂອງພະນັກງານທຸກຄົນທີ່ກວດຜ່ານມາຈະຖືກລຶບອອກ.")) {
+            if (confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບເຊດຊັນລວມທັງໝົດ? ຂໍ້ມູນຂອງພະນັກງານທຸກຄົນທີ່ກວດຜ່ານມາຈະຖືກລຶບອອກຈາກບຣາວເຊີ.")) {
                 masterSession = {};
+                localStorage.removeItem('mam_master_session');
                 masterSessionBanner.classList.add('hidden');
             }
         };
 
-        // Export Consolidated Multi-Sheet Excel File
         exportBtn.addEventListener('click', () => {
             const masterCount = Object.keys(masterSession).length;
 
-            // FALLBACK CASE: If no master session data exists, do a quick single-sheet export of the current screen
             if (masterCount === 0) {
                 const name = targetNameInput.value.trim() || "ພະນັກງານ";
                 const tableRows = [];
@@ -882,14 +860,12 @@
                 return;
             }
 
-            // EXPORT MULTI-SHEET CONSOLIDATED REPORT
             const workbook = XLSX.utils.book_new();
 
-            // SHEET 1: Master Summary (ບົດສະຫຼຸບລວມຂອງທຸກຄົນ)
             const summaryRows = [];
             summaryRows.push(["ບົດສະຫຼຸບຜົນການກວດສອບຄຸນນະພາບຂໍ້ມູນ (Consolidated Quality Audit Summary)"]);
             summaryRows.push([`ວັນທີສົ່ງອອກ: ${new Date().toLocaleDateString('lo-LA')}`, `ຈຳນວນພະນັກງານທັງໝົດ: ${masterCount} ຄົນ`]);
-            summaryRows.push([]); // spacer
+            summaryRows.push([]); 
             summaryRows.push(["ລຳດັບ", "ຊື່ພະນັກງານສຸກສາລາ", "ຈຳນວນຂໍ້ກວດສອບ", "ກົງກັນ (ຂໍ້)", "ຜິດດ່ຽງ (ຂໍ້)", "ອັດຕາຄວາມຖືກຕ້ອງ (%)"]);
 
             let index = 1;
@@ -908,7 +884,6 @@
             const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
             XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary (ບົດສະຫຼຸບລວມ)");
 
-            // SHEET 2: Consolidated Details (ລາຍລະອຽດແຕ່ລະຂໍ້ຂອງທຸກຄົນ)
             const detailRows = [];
             detailRows.push(["ລາຍລະອຽດຜົນການກວດສອບແຕ່ລະຂໍ້ (All Consolidated Audit Details)"]);
             detailRows.push([]);
@@ -930,7 +905,6 @@
             const detailsSheet = XLSX.utils.aoa_to_sheet(detailRows);
             XLSX.utils.book_append_sheet(workbook, detailsSheet, "All_Details (ລາຍລະອຽດ)");
 
-            // Write File
             XLSX.writeFile(workbook, `MAM_Consolidated_Audit_Report_${masterCount}_Staff.xlsx`);
         });
     </script>
