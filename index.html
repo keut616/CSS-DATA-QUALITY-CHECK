@@ -44,8 +44,9 @@
                     <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <span>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ MAM</span>
+                    <span>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ MAM (Split-Screen Auditor)</span>
                 </h1>
+                <p class="text-blue-100 text-xs mt-1">ວິທີທີ 1: ແບ່ງໜ້າຈໍເບິ່ງເອກະສານຕົວຈິງ ຄຽງຄູ່ກັບການຕິກກວດສອບຄຳຕອບ 301 - 374</p>
             </div>
             
             <!-- Quick Stats Summary -->
@@ -64,7 +65,7 @@
                 <div class="relative flex-1 min-w-0">
                     <input type="file" id="pdfFile" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                     <div id="pdfBtnLabel" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate">
-                        ເລືອກໄຟຣ PDF ພະນັກງານ
+                        ...ເລືອກໄຟຣ PDF ພະນັກງານ
                     </div>
                 </div>
             </div>
@@ -91,8 +92,8 @@
                 <button id="processBtn" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap">
                     ເລີ່ມກວດສອບ
                 </button>
-                <button id="saveToMasterBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap" title="ບັນທຶກຜົນການກວດຂອງຄົນນີ້ ເຂົ້າຖານຂໍ້ມູນລວມ">
-                    ບັນທຶກຜົນຄົນນີ້
+                <button id="saveToMasterBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap" title="...ບັນທຶກຜົນການກວດຂອງຄົນນີ້ ເຂົ້າຖານຂໍ້ມູນລວມ">
+                    ...ບັນທຶກຜົນຄົນນີ້
                 </button>
                 <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap flex items-center justify-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -152,7 +153,7 @@
                 <!-- PDF Canvas Pages will be appended here -->
                 <div class="text-slate-400 text-center py-20">
                     <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414a1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                     </svg>
                     <p class="text-sm font-semibold">ຍັງບໍ່ມີເອກະສານ PDF</p>
                     <p class="text-xs text-slate-500 mt-1">ອັບໂຫຼດໄຟຣ PDF ຂອງພະນັກງານເພື່ອສະແດງໜ້າເຈ້ຍຕົວຈິງຢູ່ບ່ອນນີ້</p>
@@ -294,7 +295,77 @@
         });
 
         // Smart Lao Opposites Generator Function (Reverses meaning when selecting '0' or '1')
-        function getPDFOppositeText(text, targetVal) {
+        function getPDFOppositeText(text, targetVal, qNum) {
+            // Rule Override for Question 327
+            if (qNum === 327) {
+                return targetVal === "1" ? "ບັນທຶກຂໍ້ມູນທັງໝົດຢ່າງຖືກຕ້ອງ" : "ບັນທຶກຂໍ້ມູນບໍ່ຖຶກທັງໝົດ";
+            }
+            
+            // Rule Override for Question 352 (User Request)
+            if (qNum === 352) {
+                return targetVal === "1" ? "ໄດ້ບັນທຶກວັກຊີນທີ່ໄດ້ສັກໄດ້ຢ່າງຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖືກຕ້ອງ";
+            }
+
+            // Rule Override for Question 353 (User Request)
+            if (qNum === 353) {
+                return targetVal === "1" ? "ໄດ້ກວດຖຶກຕ້ອງ" : "ໄດ້ກວດບໍ່ຖຶກຕ້ອງ";
+            }
+
+            // Rule Override for Question 354 (User Request)
+            if (qNum === 354) {
+                return targetVal === "1" ? "ບໍ່ໃຫ້ຖຶກຕ້ອງ" : "ໃຫ້ຖຶກຕ້ອງ";
+            }
+
+            // Rule Override for Question 355 (User Request)
+            if (qNum === 355) {
+                return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
+            }
+
+            // Rule Override for Question 359 (User Request - Swapped)
+            if (qNum === 359) {
+                return targetVal === "1" ? "ເວົ້າບໍ່ຖຶກຕ້ອງ" : "ເວົ້າຖືກຕ້ອງ";
+            }
+
+            // Rule Override for Question 360 (User Request)
+            if (qNum === 360) {
+                return targetVal === "1" ? "ແມ່ນ, ເດັກເຕີບໂຕຊ້າ" : "ບໍ່ ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
+            }
+
+            // Rule Override for Question 361 (User Request)
+            if (qNum === 361) {
+                return targetVal === "1" ? "ບໍ່ມີປັດໃຈສ່ຽງ" : "ມີປັດໃຈສ່ຽງ";
+            }
+
+            // Rule Override for Question 363 (User Request)
+            if (qNum === 363) {
+                return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
+            }
+
+            // Rule Override for Question 364 (User Request)
+            if (qNum === 364) {
+                return targetVal === "1" ? "ຄວາມສ່ຽງຕໍ່າ" : "ຄວາມສ່ຽງກາງ, ຄວາມສ່ຽງສູງ";
+            }
+
+            // Rule Override for Question 365 (User Request - Swapped)
+            if (qNum === 365) {
+                return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
+            }
+
+            // Rule Override for Question 366 (User Request)
+            if (qNum === 366) {
+                return targetVal === "1" ? "ໃຫ້ການປິ່ນປົວຖືກຕ້ອງ" : "ໃຫ້ການປິ່ນປົວບໍ່ຖຶກຕ້ອງ";
+            }
+
+            // Rule Override for Question 368 (User Request)
+            if (qNum === 368) {
+                return targetVal === "1" ? "ບັນທຶກຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
+            }
+
+            // Rule Override for Question 372 (User Request)
+            if (qNum === 372) {
+                return targetVal === "1" ? "ແມ່ນ" : "ບໍ່ແມ່ນ";
+            }
+
             if (!text || text === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
                 return targetVal === "1" ? "ໄດ້ຮັບ/ມີ" : "ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
             }
@@ -328,7 +399,7 @@
                 if (negText.startsWith("ໄດ້")) {
                     negText = negText.replace(/^ໄດ້/, "ບໍ່ໄດ້");
                 } else if (negText.startsWith("ຖືກຕ້ອງ")) {
-                    negText = "ບໍ່" + negText;
+                    negText = "ບໍ່ + negText";
                 } else if (negText.startsWith("ມີ")) {
                     negText = negText.replace(/^ມີ/, "ບໍ່ມີ");
                 } else if (negText.startsWith("ແຕ້ມເສັ້ນສະແດງ")) {
@@ -571,10 +642,10 @@
             const active0Class = pdfAns === "0" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50";
 
             // Resolve the exact opposite value dynamically based on Lao prefix rules!
-            const pdfDisplayVal = getPDFOppositeText(koboAns, pdfAns);
+            const pdfDisplayVal = getPDFOppositeText(koboAns, pdfAns, qNum);
 
             tr.innerHTML = `
-                <td class="px-4 py-3 font-bold text-slate-600">ຂໍ້ ${qNum}</td>
+                <td class="px-4 py-3 font-bold text-slate-600">ຂໍ́ ${qNum}</td>
                 <td class="px-2 py-3 text-center">${statusHtml}</td>
                 <td class="px-4 py-3">
                     <div class="flex items-center space-x-2">
@@ -669,7 +740,7 @@
                     total++;
                     const kVal = koboAnswers[qNum];
                     // Dynamic opposite text resolution for exported sheets!
-                    const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum]);
+                    const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum], qNum);
                     const hasBor = kVal.includes("ບໍ່");
                     let status = "ຜິດດ່ຽງ";
                     
@@ -747,7 +818,7 @@
                     if (koboAnswers[qNum]) {
                         total++;
                         const kVal = koboAnswers[qNum];
-                        const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum]);
+                        const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum], qNum);
                         const hasBor = kVal.includes("ບໍ່");
                         let matchStatus = "ຜິດດ່ຽງ";
                         
@@ -812,7 +883,7 @@
             const detailRows = [];
             detailRows.push(["ລາຍລະອຽດຜົນການກວດສອບແຕ່ລະຂໍ້ (All Consolidated Audit Details)"]);
             detailRows.push([]);
-            detailRows.push(["ຊື່ພະນັກງານ", "ຂໍ້ທີ", "ສະຖານະການປຽບທຽບ", "ຄຳຕອບ PDF (ຕົວຈິງ)", "ຄຳຕອບໃນ Kobo (Excel)"]);
+            detailRows.push(["ຊື່ພະນັກງານ", "ຂໍ້ທີ", "ສະຖານະການກວດສອບ", "ຄຳຕອບ PDF (ຕົວຈິງ)", "ຄຳຕອບໃນ Kobo (Excel)"]);
 
             for (let name in masterSession) {
                 const staff = masterSession[name];
