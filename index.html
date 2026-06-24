@@ -166,7 +166,7 @@
             <div class="bg-slate-200 text-slate-700 px-4 py-2 text-xs font-bold flex justify-between items-center flex-none border-b border-slate-300">
                 <span class="flex items-center gap-1.5">
                     <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-                    <span>ຝັ່ງຂວາ: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບ (ຂໍ້ 301 - 374)</span>
+                    <span>ຝັ່ງຂວา: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບ (ຂໍ້ 301 - 374)</span>
                 </span>
                 <span class="text-xs text-slate-500 font-medium">*ຄລິກແຖວໃດໜຶ່ງເພື່ອເລື່ອນ PDF ໄປຫາໜ້າທີ່ມີຄຳຖາມນັ້ນ</span>
             </div>
@@ -411,6 +411,49 @@
             }
         }
 
+        /**
+         * Smart Match Logic: Checks if PDF selection matches the KOBO Excel answer correctly.
+         * Accounts for standard polarity, flipped polarity (Q354, Q361, Q365), and custom text mapping (Q364).
+         */
+        function checkIsMatch(koboAns, pdfAns, qNum) {
+            if (!koboAns || koboAns === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
+                return false;
+            }
+            
+            const cleanKobo = koboAns.trim();
+            const pdfText = getPDFOppositeText(cleanKobo, pdfAns, qNum).trim();
+            
+            // 1. Direct Text Comparison (handles most custom overrides perfectly)
+            if (pdfText === cleanKobo) {
+                return true;
+            }
+            
+            // 2. Special Case for Q364 (Risk levels: Low vs High/Med)
+            if (qNum === 364) {
+                const isLowRisk = cleanKobo.includes("ຕໍ່າ");
+                const isHighOrMedRisk = cleanKobo.includes("ກາງ") || cleanKobo.includes("ສູງ");
+                if (pdfAns === "1" && isLowRisk) return true;
+                if (pdfAns === "0" && isHighOrMedRisk) return true;
+                return false;
+            }
+            
+            // 3. Flipped Polarity Questions (Where '1' contains "ບໍ່" and '0' does not)
+            const flippedQuestions = [354, 361, 365];
+            const isFlipped = flippedQuestions.includes(qNum);
+            
+            const hasBor = cleanKobo.includes("ບໍ່") || cleanKobo.includes("ບໍ່ຖຶກ") || cleanKobo.includes("ບໍ່ຖືກ");
+            
+            if (isFlipped) {
+                if (pdfAns === "1" && hasBor) return true;
+                if (pdfAns === "0" && !hasBor) return true;
+            } else {
+                if (pdfAns === "1" && !hasBor) return true;
+                if (pdfAns === "0" && hasBor) return true;
+            }
+            
+            return false;
+        }
+
         function showError(msg) {
             errorMessage.textContent = msg;
             errorMessage.classList.remove('hidden');
@@ -606,15 +649,9 @@
         function renderInteractiveRow(qNum) {
             const koboAns = koboAnswers[qNum];
             const pdfAns = pdfAnswers[qNum];
-            const hasBor = koboAns.includes("ບໍ່");
 
-            // Evaluate Match Condition
-            let isMatch = false;
-            if (pdfAns === "1" && !hasBor) {
-                isMatch = true;
-            } else if (pdfAns === "0" && hasBor) {
-                isMatch = true;
-            }
+            // Evaluate Match Condition using smart helper function
+            const isMatch = checkIsMatch(koboAns, pdfAns, qNum);
 
             // Create or replace row
             let tr = document.querySelector(`tr[data-qnum="${qNum}"]`);
@@ -705,9 +742,9 @@
             for (let qNum = 301; qNum <= 374; qNum++) {
                 if (koboAnswers[qNum]) {
                     total++;
-                    const hasBor = koboAnswers[qNum].includes("ບໍ່");
-                    if (pdfAnswers[qNum] === "1" && !hasBor) matched++;
-                    else if (pdfAnswers[qNum] === "0" && hasBor) matched++;
+                    if (checkIsMatch(koboAnswers[qNum], pdfAnswers[qNum], qNum)) {
+                        matched++;
+                    }
                 }
             }
 
@@ -741,13 +778,9 @@
                     const kVal = koboAnswers[qNum];
                     // Dynamic opposite text resolution for exported sheets!
                     const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum], qNum);
-                    const hasBor = kVal.includes("ບໍ່");
                     let status = "ຜິດດ່ຽງ";
                     
-                    if (pdfAnswers[qNum] === "1" && !hasBor) {
-                        status = "ກົງກັນ";
-                        matched++;
-                    } else if (pdfAnswers[qNum] === "0" && hasBor) {
+                    if (checkIsMatch(kVal, pdfAnswers[qNum], qNum)) {
                         status = "ກົງກັນ";
                         matched++;
                     }
@@ -819,13 +852,9 @@
                         total++;
                         const kVal = koboAnswers[qNum];
                         const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum], qNum);
-                        const hasBor = kVal.includes("ບໍ່");
                         let matchStatus = "ຜິດດ່ຽງ";
                         
-                        if (pdfAnswers[qNum] === "1" && !hasBor) {
-                            matchStatus = "ກົງກັນ";
-                            matched++;
-                        } else if (pdfAnswers[qNum] === "0" && hasBor) {
+                        if (checkIsMatch(kVal, pdfAnswers[qNum], qNum)) {
                             matchStatus = "ກົງກັນ";
                             matched++;
                         }
