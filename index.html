@@ -36,7 +36,7 @@
 </head>
 <body class="h-screen overflow-hidden flex flex-col">
 
-    <!-- Top Navigation Header (Polished & Compact) -->
+    <!-- Top Navigation Header -->
     <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-6 py-3 shadow-md flex-none">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
             <div>
@@ -59,40 +59,41 @@
     <!-- Upper Compact File Upload Controls -->
     <div class="bg-white border-b border-slate-200 p-3 flex-none shadow-sm px-6">
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-3 items-center justify-between">
-            <!-- PDF Upload (Narrowed) -->
+            <!-- PDF Upload -->
             <div class="flex items-center space-x-1.5 w-full lg:w-[22%]">
                 <span class="text-[11px] font-bold text-green-800 uppercase whitespace-nowrap">1. ໄຟຣ PDF:</span>
                 <div class="relative flex-1 min-w-0">
-                    <input type="file" id="pdfFile" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                    <div id="pdfBtnLabel" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate">
+                    <input type="file" id="pdfFile" accept=".pdf" class="hidden" onchange="handlePDFChange(this)">
+                    <button type="button" onclick="triggerPDFUpload()" id="pdfBtnLabel" class="w-full text-left border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate shadow-sm transition-colors">
                         ເລືອກໄຟຣ PDF ພະນັກງານ
-                    </div>
+                    </button>
                 </div>
             </div>
 
-            <!-- Excel Upload (Narrowed) -->
+            <!-- Excel Upload -->
             <div class="flex items-center space-x-1.5 w-full lg:w-[25%]">
                 <span class="text-[11px] font-bold text-green-800 uppercase whitespace-nowrap">2. Kobo Excel:</span>
                 <div class="relative flex-1 min-w-0">
-                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                    <div id="excelBtnLabel" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate">
+                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="handleCSVChange(this)">
+                    <button type="button" onclick="triggerCSVUpload()" id="excelBtnLabel" class="w-full text-left border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate shadow-sm transition-colors">
                         ເລືອກໄຟຣ Excel (.xlsx, .csv)
-                    </div>
+                    </button>
                 </div>
             </div>
 
-            <!-- Name Selection Input (Narrowed) -->
-            <div class="flex items-center space-x-1.5 w-full lg:w-[25%]">
-                <span class="text-[11px] font-bold text-green-800 uppercase whitespace-nowrap">3. ຊື່ພະນັກງານ:</span>
-                <input type="text" id="targetName" placeholder="ດຶງຊື່ອັດຕະໂນມັດ" class="flex-1 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] focus:ring-2 focus:ring-blue-500 outline-none font-medium">
+            <!-- Name Selection Input (Hidden but utilized in background processing) -->
+            <div class="hidden">
+                <input type="text" id="targetName" placeholder="ດຶງຊື່ອັດຕະໂນມັດ">
+                <input type="text" id="targetDistrict" placeholder="ດຶງຂໍ້ມູນເມືອງ">
+                <input type="text" id="targetHC" placeholder="ດຶງຂໍ້ມູນສຸກສາລາ">
             </div>
 
-            <!-- Action Buttons (Start, Save to Master, Export) -->
+            <!-- Action Buttons -->
             <div class="flex items-center gap-2 w-full lg:w-[28%] justify-end">
                 <button id="processBtn" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap">
                     ເລີ່ມກວດສອບ
                 </button>
-                <button id="saveToMasterBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap" title="...ບັນທຶກຜົນການກວດຂອງຄົນນີ້ ເຂົ້າຖານຂໍ້ມູນລວມ">
+                <button id="saveToMasterBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap" title="ບັນທຶກຜົນການກວດຂອງຄົນນີ້ ເຂົ້າຖານຂໍ້ມູນລວມ">
                     ...ບັນທຶກຜົນຄົນນີ້
                 </button>
                 <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap flex items-center justify-center gap-1">
@@ -109,7 +110,7 @@
     <div id="masterSessionBanner" class="hidden bg-slate-900 text-slate-300 px-6 py-1.5 flex-none text-[11px] font-medium flex items-center justify-between border-b border-slate-700">
         <span class="flex items-center gap-2">
             <span class="h-2 w-2 bg-emerald-400 rounded-full animate-ping"></span>
-            <span>ເຊດຊັນລວມ (Master Consolidation active - ເຊບລົງບຣາວເຊີອັດຕະໂນມັດ)</span>
+            <span>ເຊດຊັນລວມ (Master Session active - ເຊບລົງບຣາວເຊີອັດຕະໂນມັດ)</span>
         </span>
         <span id="sessionListCount" class="font-bold text-emerald-400">ພະນັກງານທີ່ກວດແລ້ວ: 0 ຄົນ</span>
         <button onclick="clearMasterSession()" class="text-rose-400 hover:text-rose-300 font-bold underline transition">ລຶບເຊດຊັນລວມ</button>
@@ -118,7 +119,7 @@
     <!-- Main Workspace (Split-Screen View) -->
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
         
-        <!-- Left Pane: PDF Document Viewer (50% Width on large screens) -->
+        <!-- Left Pane: PDF Document Viewer -->
         <div class="w-full lg:w-1/2 border-r border-slate-200 bg-slate-800 flex flex-col h-1/2 lg:h-full overflow-hidden">
             <div class="bg-slate-900 text-slate-300 px-4 py-2 text-xs font-bold flex flex-wrap justify-between items-center gap-2 flex-none border-b border-slate-700">
                 <span class="flex items-center gap-1.5">
@@ -150,7 +151,6 @@
             
             <!-- Scrollable PDF Canvas Container -->
             <div id="pdfViewerContainer" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col items-center">
-                <!-- PDF Canvas Pages will be appended here -->
                 <div class="text-slate-400 text-center py-20">
                     <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
@@ -161,7 +161,7 @@
             </div>
         </div>
 
-        <!-- Right Pane: Interactive Audit Table (50% Width) -->
+        <!-- Right Pane: Interactive Audit Table -->
         <div class="w-full lg:w-1/2 flex flex-col h-1/2 lg:h-full bg-slate-50 overflow-hidden">
             <div class="bg-slate-200 text-slate-700 px-4 py-2 text-xs font-bold flex justify-between items-center flex-none border-b border-slate-300">
                 <span class="flex items-center gap-1.5">
@@ -215,6 +215,12 @@
         const pdfFileInput = document.getElementById('pdfFile');
         const csvFileInput = document.getElementById('csvFile');
         const targetNameInput = document.getElementById('targetName');
+        const targetDistrictInput = document.getElementById('targetDistrict');
+        const targetHCInput = document.getElementById('targetHC');
+
+        const pdfBtnLabel = document.getElementById('pdfBtnLabel');
+        const excelBtnLabel = document.getElementById('excelBtnLabel');
+
         const processBtn = document.getElementById('processBtn');
         const saveToMasterBtn = document.getElementById('saveToMasterBtn');
         const exportBtn = document.getElementById('exportBtn');
@@ -227,8 +233,6 @@
         const quickStats = document.getElementById('quickStats');
         const pdfPageCounter = document.getElementById('pdfPageCounter');
         
-        const pdfBtnLabel = document.getElementById('pdfBtnLabel');
-        const excelBtnLabel = document.getElementById('excelBtnLabel');
         const masterSessionBanner = document.getElementById('masterSessionBanner');
         const sessionListCount = document.getElementById('sessionListCount');
 
@@ -245,11 +249,49 @@
         let pdfAnswers = {}; // Human edited PDF answers (initialized using Auto-Guess)
         let currentZoom = 100; // Zoom percentage state (Default 100%)
 
+        // MASTER SESSION DB (Stores data of multiple staff members)
         let masterSession = {};
+        
         try {
             const savedSession = localStorage.getItem('mam_master_session');
             if (savedSession) {
                 masterSession = JSON.parse(savedSession);
+                
+                // Self-Healing logic for historical records to fix any mismatched status values
+                let databaseWasHealed = false;
+                for (let name in masterSession) {
+                    const staff = masterSession[name];
+                    let matched = 0;
+                    let total = 0;
+                    
+                    if (staff.details && Array.isArray(staff.details)) {
+                        staff.details.forEach(rec => {
+                            total++;
+                            const isMatched = rec.pdfAns.trim() === rec.koboAns.trim();
+                            const newStatus = isMatched ? "ກົງກັນ" : "ຜິດດ່ຽງ";
+                            if (rec.status !== newStatus) {
+                                rec.status = newStatus;
+                                databaseWasHealed = true;
+                            }
+                            if (isMatched) matched++;
+                        });
+                        
+                        const newAccuracy = total > 0 ? parseFloat(((matched / total) * 100).toFixed(1)) : 0;
+                        const newMismatched = total - matched;
+                        
+                        if (staff.stats.matched !== matched || staff.stats.mismatched !== newMismatched || staff.stats.accuracy !== newAccuracy) {
+                            staff.stats.matched = matched;
+                            staff.stats.mismatched = newMismatched;
+                            staff.stats.accuracy = newAccuracy;
+                            databaseWasHealed = true;
+                        }
+                    }
+                }
+                
+                if (databaseWasHealed) {
+                    localStorage.setItem('mam_master_session', JSON.stringify(masterSession));
+                }
+
                 const totalAudited = Object.keys(masterSession).length;
                 if (totalAudited > 0) {
                     sessionListCount.textContent = `ພະນັກງານທີ່ກວດແລ້ວ: ${totalAudited} ຄົນ`;
@@ -260,21 +302,42 @@
             console.error("ບໍ່ສາມາດດຶງຂໍ້ມູນເຊດຊັນລວມເກົ່າຈາກ LocalStorage ໄດ້:", e);
         }
 
-        // PDF Auto-name extract
-        pdfFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                const fileName = e.target.files[0].name;
+        // Programmatic file triggers to bypass absolute layout blocks
+        function triggerPDFUpload() {
+            pdfFileInput.click();
+        }
+
+        function triggerCSVUpload() {
+            csvFileInput.click();
+        }
+
+        // PDF file selection callback
+        function handlePDFChange(input) {
+            if (input.files.length > 0) {
+                const fileName = input.files[0].name;
                 const nameOnly = fileName.replace(/^[0-9\s]+/, '').replace(/\.pdf$/i, '').trim();
                 targetNameInput.value = nameOnly;
                 pdfBtnLabel.textContent = `✓ ${fileName}`;
             }
-        });
+        }
 
-        csvFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                excelBtnLabel.textContent = `✓ ${e.target.files[0].name}`;
+        // CSV file selection callback
+        function handleCSVChange(input) {
+            if (input.files.length > 0) {
+                excelBtnLabel.textContent = `✓ ${input.files[0].name}`;
             }
-        });
+        }
+
+        // Show Error Toast notification safely
+        function showError(msg) {
+            if (errorMessage) {
+                errorMessage.textContent = msg;
+                errorMessage.classList.remove('hidden');
+                setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+            }
+            if (tableLoader) tableLoader.classList.add('hidden');
+            if (tableWelcome) tableWelcome.classList.remove('hidden');
+        }
 
         // Zoom Management Functions
         function applyZoom() {
@@ -287,92 +350,47 @@
             });
         }
 
-        zoomInBtn.addEventListener('click', () => {
-            if (currentZoom < 250) {
-                currentZoom += 15;
-                applyZoom();
-            }
-        });
-
-        zoomOutBtn.addEventListener('click', () => {
-            if (currentZoom > 50) {
-                currentZoom -= 15;
-                applyZoom();
-            }
-        });
-
-        zoomResetBtn.addEventListener('click', () => {
-            currentZoom = 100;
-            applyZoom();
-        });
-
+        // Smart Lao Opposites Generator Function
         function getPDFOppositeText(text, targetVal, qNum) {
-            // Rule Override for Question 327
             if (qNum === 327) {
                 return targetVal === "1" ? "ບັນທຶກຂໍ້ມູນທັງໝົດຢ່າງຖືກຕ້ອງ" : "ບັນທຶກຂໍ້ມູນບໍ່ຖຶກທັງໝົດ";
             }
-            
-            // Rule Override for Question 352
             if (qNum === 352) {
                 return targetVal === "1" ? "ໄດ້ບັນທຶກວັກຊີນທີ່ໄດ້ສັກໄດ້ຢ່າງຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖືກຕ້ອງ";
             }
-
-            // Rule Override for Question 353
             if (qNum === 353) {
                 return targetVal === "1" ? "ໄດ້ກວດຖຶກຕ້ອງ" : "ໄດ້ກວດບໍ່ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 354
             if (qNum === 354) {
                 return targetVal === "1" ? "ບໍ່ໃຫ້ຖຶກຕ້ອງ" : "ໃຫ້ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 355
             if (qNum === 355) {
                 return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 359
             if (qNum === 359) {
                 return targetVal === "1" ? "ເວົ້າຖຶກຕ້ອງ" : "ເວົ້າບໍ່ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 360
             if (qNum === 360) {
                 return targetVal === "1" ? "ແມ່ນ, ເດັກເຕີບໂຕຊ້າ" : "ບໍ່ ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
             }
-
-            // Rule Override for Question 361
             if (qNum === 361) {
                 return targetVal === "1" ? "ບໍ່ມີປັດໃຈສ່ຽງ" : "ມີປັດໃຈສ່ຽງ";
             }
-
-            // Rule Override for Question 363
             if (qNum === 363) {
                 return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 364
             if (qNum === 364) {
                 return targetVal === "1" ? "ຄວາມສ່ຽງຕໍ່າ" : "ຄວາມສ່ຽງກາງ, ຄວາມສ່ຽງສູງ";
             }
-
-            // Rule Override for Question 365
             if (qNum === 365) {
                 return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
             }
-
-            // Rule Override for Question 366
             if (qNum === 366) {
                 return targetVal === "1" ? "ໃຫ້ການປິ່ນປົວຖືກຕ້ອງ" : "ໃຫ້ການປິ່ນປົວບໍ່ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 368
             if (qNum === 368) {
                 return targetVal === "1" ? "ບັນທຶກຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
             }
-
-            // Rule Override for Question 372
             if (qNum === 372) {
                 return targetVal === "1" ? "ແມ່ນ" : "ບໍ່ແມ່ນ";
             }
@@ -415,6 +433,7 @@
             }
         }
 
+        // Smart Match Logic Validator
         function checkIsMatch(koboAns, pdfAns, qNum) {
             if (!koboAns || koboAns === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
                 return false;
@@ -423,12 +442,10 @@
             const cleanKobo = koboAns.trim();
             const pdfText = getPDFOppositeText(cleanKobo, pdfAns, qNum).trim();
             
-            // 1. Direct Text Comparison (custom text maps)
             if (pdfText === cleanKobo) {
                 return true;
             }
             
-            // 2. Special Case for Q364 (Risk levels)
             if (qNum === 364) {
                 const isLowRisk = cleanKobo.includes("ຕໍ່າ");
                 const isHighOrMedRisk = cleanKobo.includes("ກາງ") || cleanKobo.includes("ສູງ");
@@ -437,10 +454,8 @@
                 return false;
             }
             
-            // 3. Flipped Polarity Questions (Where '1' contains "ບໍ່" and '0' does not)
             const flippedQuestions = [354, 361, 365];
             const isFlipped = flippedQuestions.includes(qNum);
-            
             const hasBor = cleanKobo.includes("ບໍ່") || cleanKobo.includes("ບໍ່ຖຶກ") || cleanKobo.includes("ບໍ່ຖືກ");
             
             if (isFlipped) {
@@ -452,14 +467,6 @@
             }
             
             return false;
-        }
-
-        function showError(msg) {
-            errorMessage.textContent = msg;
-            errorMessage.classList.remove('hidden');
-            setTimeout(() => errorMessage.classList.add('hidden'), 5000);
-            tableLoader.classList.add('hidden');
-            tableWelcome.classList.remove('hidden');
         }
 
         async function renderPDF(pdfFile) {
@@ -523,7 +530,7 @@
 
             const targetName = targetNameInput.value.trim();
             if (!targetName) {
-                showError('ກະລຸນາໃສ່ຊື່ພະນັກງານເພື່ອເຮັດການຄົ້ນຫາ.');
+                showError('ກະລຸນາອັບໂຫຼດໄຟຣ PDF ທີ່ມີຊື່ພະນັກງານ ເພື່ອດຶງຄົ້ນຫາອັດຕະໂນມັດເບື້ອງຫຼັງ.');
                 return;
             }
 
@@ -583,20 +590,88 @@
                     }
                 });
 
+                // SPECIFIC COLUMN HEADER TARGETING (Always targeting columns behind the scenes)
+                let staffHeader = csvHeaders.find(h => h.startsWith("103.") || h.includes("103. ຊື່") || h.includes("103_"));
+                let districtHeader = csvHeaders.find(h => h.startsWith("105.") || h.includes("105. ການຕິດຕາມ") || h.includes("105_"));
+                let hcHeader = csvHeaders.find(h => h.startsWith("106.") || h.includes("106. ການຕິດຕາມ") || h.includes("106_"));
+
+                // Fallbacks to keep robust logic
+                if (!staffHeader) staffHeader = csvHeaders.find(h => /103/i.test(h) || /ຊື່/i.test(h));
+                if (!districtHeader) districtHeader = csvHeaders.find(h => /105/i.test(h) || /ເມືອງ|district/i.test(h));
+                if (!hcHeader) hcHeader = csvHeaders.find(h => /106/i.test(h) || /ສຸກສາລາ|hc|health_center/i.test(h));
+
+                // Find Row based primarily on targeted Staff Name column
                 let targetRow = null;
-                for (let row of csvData) {
-                    for (let key in row) {
-                        if (row[key] && row[key].toString().includes(targetName)) {
-                            targetRow = row;
-                            break;
+                if (staffHeader) {
+                    targetRow = csvData.find(row => row[staffHeader] && row[staffHeader].toString().includes(targetName));
+                }
+                
+                if (!targetRow) {
+                    // Fallback to searching all columns if exact header match was lost
+                    for (let row of csvData) {
+                        for (let key in row) {
+                            if (row[key] && row[key].toString().includes(targetName)) {
+                                targetRow = row;
+                                break;
+                            }
                         }
+                        if (targetRow) break;
                     }
-                    if (targetRow) break;
                 }
 
                 if (!targetRow) {
                     showError(`ບໍ່ພົບຊື່ພະນັກງານ "${targetName}" ໃນໄຟຣ Kobo (Excel/CSV).`);
                     return;
+                }
+
+                // Extracted strictly from aligned matching column in same row behind the scenes
+                if (districtHeader && targetRow[districtHeader]) {
+                    targetDistrictInput.value = targetRow[districtHeader].trim();
+                } else {
+                    targetDistrictInput.value = "";
+                }
+
+                if (hcHeader && targetRow[hcHeader]) {
+                    targetHCInput.value = targetRow[hcHeader].trim();
+                } else {
+                    targetHCInput.value = "";
+                }
+
+                // Auto-Hydrate Historical Records that are missing District/Health Center
+                let hydratedCount = 0;
+                for (let name in masterSession) {
+                    let staff = masterSession[name];
+                    if (!staff.district || !staff.healthCenter) {
+                        let matchedRow = null;
+                        if (staffHeader) {
+                            matchedRow = csvData.find(row => row[staffHeader] && row[staffHeader].toString().includes(name));
+                        }
+                        if (!matchedRow) {
+                            for (let row of csvData) {
+                                for (let key in row) {
+                                    if (row[key] && row[key].toString().includes(name)) {
+                                        matchedRow = row;
+                                        break;
+                                    }
+                                }
+                                if (matchedRow) break;
+                            }
+                        }
+
+                        if (matchedRow) {
+                            if (districtHeader && matchedRow[districtHeader]) {
+                                staff.district = matchedRow[districtHeader].toString().trim();
+                            }
+                            if (hcHeader && matchedRow[hcHeader]) {
+                                staff.healthCenter = matchedRow[hcHeader].toString().trim();
+                            }
+                            hydratedCount++;
+                        }
+                    }
+                }
+                if (hydratedCount > 0) {
+                    localStorage.setItem('mam_master_session', JSON.stringify(masterSession));
+                    console.log(`✓ ປັບປຸງຂໍ້ມູນເມືອງ ແລະ ສຸກສາລາ ໃຫ້ກັບປະຫວັດເກົ່າຄືນໃໝ່ຄົບຖ້ວນ ${hydratedCount} ຄົນ.`);
                 }
 
                 for (let qNum = 301; qNum <= 374; qNum++) {
@@ -744,6 +819,9 @@
             const staffName = targetNameInput.value.trim();
             if (!staffName) return;
 
+            const staffDistrict = targetDistrictInput.value.trim();
+            const staffHC = targetHCInput.value.trim();
+
             let total = 0;
             let matched = 0;
             let records = [];
@@ -778,6 +856,8 @@
 
             masterSession[staffName] = {
                 staffName: staffName,
+                district: staffDistrict,
+                healthCenter: staffHC,
                 stats: {
                     total: total,
                     matched: matched,
@@ -787,7 +867,6 @@
                 details: records
             };
 
-            // Write session to LocalStorage Database
             try {
                 localStorage.setItem('mam_master_session', JSON.stringify(masterSession));
             } catch (e) {
@@ -800,43 +879,51 @@
 
             const alertBox = document.createElement('div');
             alertBox.className = "fixed top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-full shadow-lg z-50 text-xs";
-            alertBox.textContent = `✓ ບັນທຶກຂໍ້ມູນຂອງ "${staffName}" ເຂົ້າຖານຂໍ້ມູນລວມສຳເລັດ! (ປ້ອງກັນຂໍ້ມູນສູນຫາຍແລ້ວ)`;
+            alertBox.textContent = `✓ ບັນທຶກຂໍ້ມູນຂອງ "${staffName}" ເຂົ້າຖານຂໍ້ມູນລວມສຳເລັດ!`;
             document.body.appendChild(alertBox);
             setTimeout(() => alertBox.remove(), 2500);
         });
 
-        // Wipe current master session
         window.clearMasterSession = function() {
             if (confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບເຊດຊັນລວມທັງໝົດ? ຂໍ້ມູນຂອງພະນັກງານທຸກຄົນທີ່ກວດຜ່ານມາຈະຖືກລຶບອອກຈາກບຣາວເຊີ.")) {
                 masterSession = {};
                 localStorage.removeItem('mam_master_session');
                 masterSessionBanner.classList.add('hidden');
+                sessionListCount.textContent = `ພະນັກງານທີ່ກວດແລ້ວ: 0 ຄົນ`;
             }
         };
 
+        // Export Unified Multi-Sheet Report (Always exporting exactly 2 sheets: Summary and Details)
         exportBtn.addEventListener('click', () => {
-            const masterCount = Object.keys(masterSession).length;
+            let sessionToExport = JSON.parse(JSON.stringify(masterSession)); // Deep copy
 
-            if (masterCount === 0) {
-                const name = targetNameInput.value.trim() || "ພະນັກງານ";
-                const tableRows = [];
-                tableRows.push(["ຂໍ້ທີ", "ສະຖານະການກວດສອບ", "ຄຳຕອບ PDF (ຕົວຈິງ)", "ຄຳຕອບໃນ Kobo (Excel)", "ຜົນການປຽບທຽບ"]);
-
+            // Smart Fallback: If masterSession is empty but we have active data on screen, construct a single person entry
+            if (Object.keys(sessionToExport).length === 0) {
+                const activeName = targetNameInput.value.trim() || "ພະນັກງານ";
+                const activeDistrict = targetDistrictInput.value.trim() || "";
+                const activeHC = targetHCInput.value.trim() || "";
                 let total = 0;
                 let matched = 0;
+                let records = [];
 
                 for (let qNum = 301; qNum <= 374; qNum++) {
                     if (koboAnswers[qNum]) {
                         total++;
                         const kVal = koboAnswers[qNum];
                         const pVal = getPDFOppositeText(kVal, pdfAnswers[qNum], qNum);
-                        let matchStatus = "ຜິດດ່ຽງ";
+                        let status = "ຜິດດ່ຽງ";
                         
                         if (checkIsMatch(kVal, pdfAnswers[qNum], qNum)) {
-                            matchStatus = "ກົງກັນ";
+                            status = "ກົງກັນ";
                             matched++;
                         }
-                        tableRows.push([`ຂໍ້ ${qNum}`, matchStatus, pVal, kVal, matchStatus]);
+
+                        records.push({
+                            qNum: `ຂໍ້ ${qNum}`,
+                            status: status,
+                            pdfAns: pVal,
+                            koboAns: kVal
+                        });
                     }
                 }
 
@@ -845,32 +932,36 @@
                     return;
                 }
 
-                tableRows.push([]);
-                tableRows.push(["ບົດສະຫຼຸບຜົນການກວດສອບຄວາມຖືກຕ້ອງ"]);
-                tableRows.push(["ຊື່ພະນັກງານ", name]);
-                tableRows.push(["ຈຳນວນຂໍ້ທີ່ກວດສອບທັງໝົດ", `${total} ຂໍ້`]);
-                tableRows.push(["ຈຳນວນຂໍ້ທີ່ ກົງກັນ", `${matched} ຂໍ້`]);
-                tableRows.push(["ຈຳນວນຂໍ້ທີ່ ຜິດດ່ຽງ", `${total - matched} ຂໍ້`]);
-                tableRows.push(["ອັດຕາຄວາມຖືກຕ້ອງ (Accuracy)", `${((matched / total) * 100).toFixed(1)}%`]);
-
-                const worksheet = XLSX.utils.aoa_to_sheet(tableRows);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Report");
-                XLSX.writeFile(workbook, `MAM_Audit_Report_${name.replace(/\s+/g, '_')}.xlsx`);
-                return;
+                const accuracy = total > 0 ? parseFloat(((matched / total) * 100).toFixed(1)) : 0;
+                sessionToExport[activeName] = {
+                    staffName: activeName,
+                    district: activeDistrict,
+                    healthCenter: activeHC,
+                    stats: {
+                        total: total,
+                        matched: matched,
+                        mismatched: total - matched,
+                        accuracy: accuracy
+                    },
+                    details: records
+                };
             }
 
+            const masterCount = Object.keys(sessionToExport).length;
             const workbook = XLSX.utils.book_new();
 
+            // SHEET 1: Summary Sheet (ບົດສະຫຼຸບລວມ) - Matching column layout of image_be7f82.png exactly
             const summaryRows = [];
             summaryRows.push(["ບົດສະຫຼຸບຜົນການກວດສອບຄຸນນະພາບຂໍ້ມູນ (Consolidated Quality Audit Summary)"]);
             summaryRows.push([`ວັນທີສົ່ງອອກ: ${new Date().toLocaleDateString('lo-LA')}`, `ຈຳນວນພະນັກງານທັງໝົດ: ${masterCount} ຄົນ`]);
-            summaryRows.push([]); 
-            summaryRows.push(["ລຳດັບ", "ຊື່ພະນັກງານສຸກສາລາ", "ຈຳນວນຂໍ້ກວດສອບ", "ກົງກັນ (ຂໍ້)", "ຜິດດ່ຽງ (ຂໍ້)", "ອັດຕາຄວາມຖືກຕ້ອງ (%)"]);
+            summaryRows.push([]); // spacer row
+            
+            // Clean original headers without extra district columns - matching image_be7f82.png 100%
+            summaryRows.push(["ລຳດັບ", "ຊື່ພະນັກງານສຸກສາລາ", "ຈຳນວນຂໍ້", "ກົງກັນ (ຂໍ້)", "ຜິດດ່ຽງ (ຂໍ້)", "ອັດຕາຄວາມຖືກຕ້ອງ (%)"]);
 
             let index = 1;
-            for (let name in masterSession) {
-                const staff = masterSession[name];
+            for (let name in sessionToExport) {
+                const staff = sessionToExport[name];
                 summaryRows.push([
                     index++,
                     staff.staffName,
@@ -884,13 +975,14 @@
             const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
             XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary (ບົດສະຫຼຸບລວມ)");
 
+            // SHEET 2: All Details Sheet (ລາຍລະອຽດ)
             const detailRows = [];
             detailRows.push(["ລາຍລະອຽດຜົນການກວດສອບແຕ່ລະຂໍ້ (All Consolidated Audit Details)"]);
             detailRows.push([]);
             detailRows.push(["ຊື່ພະນັກງານ", "ຂໍ້ທີ", "ສະຖານະການກວດສອບ", "ຄຳຕອບ PDF (ຕົວຈິງ)", "ຄຳຕອບໃນ Kobo (Excel)"]);
 
-            for (let name in masterSession) {
-                const staff = masterSession[name];
+            for (let name in sessionToExport) {
+                const staff = sessionToExport[name];
                 for (let rec of staff.details) {
                     detailRows.push([
                         staff.staffName,
@@ -905,6 +997,7 @@
             const detailsSheet = XLSX.utils.aoa_to_sheet(detailRows);
             XLSX.utils.book_append_sheet(workbook, detailsSheet, "All_Details (ລາຍລະອຽດ)");
 
+            // Write consolidated workbook
             XLSX.writeFile(workbook, `MAM_Consolidated_Audit_Report_${masterCount}_Staff.xlsx`);
         });
     </script>
