@@ -44,9 +44,9 @@
                     <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <span>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ MAM (Split-Screen Auditor)</span>
+                    <span>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ MAM & SAM (Split-Screen Auditor)</span>
                 </h1>
-                <p class="text-blue-100 text-xs mt-1">ວິທີທີ 1: ແບ່ງໜ້າຈໍເບິ່ງເອກະສານຕົວຈິງ ຄຽງຄູ່ກັບການຕິກກວດສອບຄຳຕອບ 301 - 374</p>
+                <p class="text-blue-100 text-xs mt-1">ວິທີທີ 1: ແບ່ງໜ້າຈໍເບິ່ງເອກະສານຕົວຈິງ ຄຽງຄູ່ກັບການຕິກກວດສອບຄຳຕອບ (MAM / SAM ບໍ່ມີ ແລະ ມີອາການແຊກຊ້ອນ)</p>
             </div>
             
             <!-- Quick Stats Summary -->
@@ -98,7 +98,7 @@
                 </button>
                 <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] py-2 px-3 rounded-lg shadow transition whitespace-nowrap flex items-center justify-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     <span>ສົ່ງອອກຜົນ</span>
                 </button>
@@ -166,7 +166,7 @@
             <div class="bg-slate-200 text-slate-700 px-4 py-2 text-xs font-bold flex justify-between items-center flex-none border-b border-slate-300">
                 <span class="flex items-center gap-1.5">
                     <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-                    <span>ຝັ່ງຂວາ: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບ (ຂໍ້ 301 - 374)</span>
+                    <span>ຝັ່ງຂວາ: ຕາຕະລາງກວດສອບ ແລະ ປຽບທຽບແບບຟອມ</span>
                 </span>
                 <span class="text-xs text-slate-500 font-medium">*ຄລິກແຖວໃດໜຶ່ງເພື່ອເລື່ອນ PDF ໄປຫາໜ້າທີ່ມີຄຳຖາມນັ້ນ</span>
             </div>
@@ -191,7 +191,7 @@
                 <table class="min-w-full divide-y divide-slate-200 text-xs">
                     <thead class="bg-slate-100 sticky top-0 z-10 shadow-sm">
                         <tr>
-                            <th class="px-4 py-3 text-left font-bold text-slate-600 w-16">ຂໍ້ທີ</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 w-16">ຂໍ้ທີ</th>
                             <th class="px-4 py-3 text-center font-bold text-slate-600 w-24">ສະຖານະ</th>
                             <th class="px-4 py-3 text-left font-bold text-slate-600 w-5/12">ຄຳຕອບ PDF (ຕິກເລືອກເອງ)</th>
                             <th class="px-4 py-3 text-left font-bold text-slate-600 w-5/12">ຄຳຕອບໃນ Kobo (Excel)</th>
@@ -246,10 +246,11 @@
         let csvHeaders = [];
         let questionPageMap = {}; // Maps question number to PDF page number
         let koboAnswers = {}; // Raw answers from Kobo per question
-        let pdfAnswers = {}; // Human edited PDF answers (initialized using Auto-Guess)
-        let currentZoom = 100; // Zoom percentage state (Default 100%)
+        let pdfAnswers = {}; // Human edited PDF answers
+        let currentZoom = 100; // Zoom percentage state
+        let detectedQuestions = []; // Array of dynamically detected question numbers
 
-        // MASTER SESSION DB (Stores data of multiple staff members)
+        // MASTER SESSION DB
         let masterSession = {};
         
         try {
@@ -257,7 +258,6 @@
             if (savedSession) {
                 masterSession = JSON.parse(savedSession);
                 
-                // Self-Healing logic for historical records to fix any mismatched status values
                 let databaseWasHealed = false;
                 for (let name in masterSession) {
                     const staff = masterSession[name];
@@ -302,7 +302,7 @@
             console.error("ບໍ່ສາມາດດຶງຂໍ້ມູນເຊດຊັນລວມເກົ່າຈາກ LocalStorage ໄດ້:", e);
         }
 
-        // Programmatic file triggers to bypass absolute layout blocks
+        // Programmatic file triggers
         function triggerPDFUpload() {
             pdfFileInput.click();
         }
@@ -311,7 +311,6 @@
             csvFileInput.click();
         }
 
-        // PDF file selection callback
         function handlePDFChange(input) {
             if (input.files.length > 0) {
                 const fileName = input.files[0].name;
@@ -321,14 +320,13 @@
             }
         }
 
-        // CSV file selection callback
         function handleCSVChange(input) {
             if (input.files.length > 0) {
                 excelBtnLabel.textContent = `✓ ${input.files[0].name}`;
             }
         }
 
-        // Show Error Toast notification safely
+        // Show Error Toast safely
         function showError(msg) {
             if (errorMessage) {
                 errorMessage.textContent = msg;
@@ -348,6 +346,25 @@
                 wrapper.style.width = '100%';
                 wrapper.style.maxWidth = `${newWidth}px`;
             });
+        }
+
+        // Dynamic Question Extraction from Kobo Headers
+        function detectQuestionsFromHeaders(headers) {
+            let questions = [];
+            headers.forEach(h => {
+                let match = h.match(/^(\d+)(?:\.|\s|_)/);
+                if (match) {
+                    let qNum = parseInt(match[1], 10);
+                    // Ignore administrative metadata fields (101-115) to focus on evaluation questions
+                    if (qNum >= 200 && qNum !== 300) { 
+                        if (!questions.includes(qNum)) {
+                            questions.push(qNum);
+                        }
+                    }
+                }
+            });
+            questions.sort((a, b) => a - b);
+            return questions;
         }
 
         // Smart Lao Opposites Generator Function
@@ -483,13 +500,13 @@
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join(' ');
 
-                for (let qNum = 301; qNum <= 374; qNum++) {
+                detectedQuestions.forEach(qNum => {
                     const qReg = new RegExp(`^${qNum}(?:\\.|\\s|$)`);
                     const found = textContent.items.some(item => qReg.test(item.str.trim()));
                     if (found) {
                         questionPageMap[qNum] = pNum;
                     }
-                }
+                });
             }
 
             for (let pNum = 1; pNum <= pdf.numPages; pNum++) {
@@ -541,10 +558,9 @@
             resultsBody.innerHTML = '';
             koboAnswers = {};
             pdfAnswers = {};
+            detectedQuestions = [];
 
             try {
-                await renderPDF(pdfFileInput.files[0]);
-
                 const dataFile = csvFileInput.files[0];
                 const isExcel = dataFile.name.endsWith('.xlsx') || dataFile.name.endsWith('.xls');
 
@@ -589,6 +605,16 @@
                         };
                     }
                 });
+
+                // Detect Questions dynamically from headers
+                detectedQuestions = detectQuestionsFromHeaders(csvHeaders);
+                if (detectedQuestions.length === 0) {
+                    // Fallback to MAM range if no numeric prefixes are identified
+                    for (let i = 301; i <= 374; i++) detectedQuestions.push(i);
+                }
+
+                // Map and parse the PDF
+                await renderPDF(pdfFileInput.files[0]);
 
                 // SPECIFIC COLUMN HEADER TARGETING
                 let staffHeader = csvHeaders.find(h => h.startsWith("103.") || h.includes("103. ຊື່") || h.includes("103_"));
@@ -667,10 +693,9 @@
                 }
                 if (hydratedCount > 0) {
                     localStorage.setItem('mam_master_session', JSON.stringify(masterSession));
-                    console.log(`✓ ປັບປຸງຂໍ້ມູນເມືອງ ແລະ ສຸກສາລາ ໃຫ້ກັບປະຫວັດເກົ່າຄືນໃໝ່ຄົບຖ້ວນ ${hydratedCount} ຄົນ.`);
                 }
 
-                for (let qNum = 301; qNum <= 374; qNum++) {
+                detectedQuestions.forEach(qNum => {
                     let koboAnsRaw = "";
                     let targetHeader = csvHeaders.find(h => {
                         return new RegExp(`^${qNum}(?:\\.|_|\\s|$)`).test(h);
@@ -695,7 +720,7 @@
                     }
 
                     renderInteractiveRow(qNum);
-                }
+                });
 
                 updateStats();
                 tableLoader.classList.add('hidden');
@@ -788,14 +813,14 @@
             let total = 0;
             let matched = 0;
 
-            for (let qNum = 301; qNum <= 374; qNum++) {
+            detectedQuestions.forEach(qNum => {
                 if (koboAnswers[qNum]) {
                     total++;
                     if (checkIsMatch(koboAnswers[qNum], pdfAnswers[qNum], qNum)) {
                         matched++;
                     }
                 }
-            }
+            });
 
             const mismatches = total - matched;
             const percentage = total > 0 ? ((matched / total) * 100).toFixed(1) : 0;
@@ -822,7 +847,7 @@
             let matched = 0;
             let records = [];
 
-            for (let qNum = 301; qNum <= 374; qNum++) {
+            detectedQuestions.forEach(qNum => {
                 if (koboAnswers[qNum]) {
                     total++;
                     const kVal = koboAnswers[qNum];
@@ -841,7 +866,7 @@
                         koboAns: kVal
                     });
                 }
-            }
+            });
 
             if (total === 0) {
                 showError("ບໍ່ມີຂໍ້ມູນການກວດສອບທີ່ຈະບັນທຶກ. ກະລຸນາກົດປຸ່ມ 'ເລີ່ມກວດສອບ' ກ່ອນ.");
@@ -889,7 +914,7 @@
             }
         };
 
-        // Export Consolidated Multi-Sheet Report (Always exporting exactly 2 sheets: Summary and Details)
+        // Export Unified Multi-Sheet Report (Always exporting exactly 2 sheets: Summary and Details)
         exportBtn.addEventListener('click', () => {
             let sessionToExport = {};
 
@@ -904,7 +929,7 @@
                 let matched = 0;
                 let records = [];
 
-                for (let qNum = 301; qNum <= 374; qNum++) {
+                detectedQuestions.forEach(qNum => {
                     if (koboAnswers[qNum]) {
                         total++;
                         const kVal = koboAnswers[qNum];
@@ -923,7 +948,7 @@
                             koboAns: kVal
                         });
                     }
-                }
+                });
 
                 if (total === 0) {
                     showError("ບໍ່ມີຂໍ້ມູນທີ່ຈະສົ່ງອອກ. ກະລຸນາກົດປຸ່ມ 'ເລີ່ມກວດສອບ' ກ່ອນ.");
