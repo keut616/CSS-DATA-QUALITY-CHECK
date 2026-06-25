@@ -46,7 +46,7 @@
                     </svg>
                     <span>ລະບົບກວດສອບຄວາມຖືກຕ້ອງຂອງຂໍ້ມູນ MAM & SAM (Split-Screen Auditor)</span>
                 </h1>
-                <p class="text-blue-100 text-xs mt-1">ວິທີທີ 1: ແບ່ງໜ້າຈໍເບິ່ງເອກະສານຕົວຈິງ ຄຽງຄູ່ກັບການຕິກກວດສອບຄຳຕອບ (MAM / SAM ບໍ່ມີ ແລະ ມີອາການແຊກຊ້ອນ)</p>
+                <p class="text-blue-100 text-xs mt-1">ແບ່ງໜ້າຈໍເບິ່ງເອກະສານຕົວຈິງ ຄຽງຄູ່ກັບການຕິກກວດສອບຄຳຕອບ (MAM, SAM ບໍ່ມີ ແລະ ມີອາການແຊກຊ້ອນ)</p>
             </div>
             
             <!-- Quick Stats Summary -->
@@ -74,7 +74,7 @@
             <div class="flex items-center space-x-1.5 w-full lg:w-[25%]">
                 <span class="text-[11px] font-bold text-green-800 uppercase whitespace-nowrap">2. Kobo Excel:</span>
                 <div class="relative flex-1 min-w-0">
-                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="triggerCSVUpload(this)">
+                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="handleCSVChange(this)">
                     <button type="button" onclick="triggerCSVUpload()" id="excelBtnLabel" class="w-full text-left border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate shadow-sm transition-colors">
                         ເລືອກໄຟຣ Excel (.xlsx, .csv)
                     </button>
@@ -110,7 +110,7 @@
     <div id="masterSessionBanner" class="hidden bg-slate-900 text-slate-300 px-6 py-1.5 flex-none text-[11px] font-medium flex items-center justify-between border-b border-slate-700">
         <span class="flex items-center gap-2">
             <span class="h-2 w-2 bg-emerald-400 rounded-full animate-ping"></span>
-            <span>ເຊດຊັນລວມ (Master Session active - ເຊບລົງບຣາວເຊີອັດຕະໂນມັດ)</span>
+            <span>ເຊດຊັນລວມ (Master Session active - ເcheckedລົງບຣາວເຊີອັດຕະໂນມັດ)</span>
         </span>
         <span id="sessionListCount" class="font-bold text-emerald-400">ພະນັກງານທີ່ກວດແລ້ວ: 0 ຄົນ</span>
         <button onclick="clearMasterSession()" class="text-rose-400 hover:text-rose-300 font-bold underline transition">ລຶບເຊດຊັນລວມ</button>
@@ -137,7 +137,7 @@
                     </button>
                     <span id="zoomPercent" class="font-mono text-xs text-slate-300 min-w-[36px] text-center">100%</span>
                     <button id="zoomInBtn" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white p-1 rounded transition-colors" title="ຊູມເຂົ້າ">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
                         </svg>
                     </button>
@@ -359,7 +359,7 @@
                 let match = h.match(/(?:^|[^0-9])(2\d{2}|3\d{2}|4\d{2})(?:[^0-9]|$)/);
                 if (match) {
                     let qNum = parseInt(match[1], 10);
-                    // Ignore administrative metadata fields and specifically exclude 208 and the range 201-207
+                    // Ignore administrative metadata fields (101-115) and specifically exclude 208 and the range 201-207
                     if (qNum >= 200 && qNum !== 300 && qNum !== 208 && (qNum < 201 || qNum > 207)) { 
                         if (!questions.includes(qNum)) {
                             questions.push(qNum);
@@ -380,37 +380,78 @@
                 return targetVal === "1" ? "ບັນທຶກຂໍ້ມູນທັງໝົດຢ່າງຖືກຕ້ອງ" : "ບັນທຶກຂໍ້ມູນບໍ່ຖຶກທັງໝົດ";
             }
             if (qNum === 352) {
-                return targetVal === "1" ? "ໄດ້ບັນທຶກວັກຊີນທີ່ໄດ້ສັກໄດ້ຢ່າງຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖືກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ໄດ້ອະທິບາຍ" : "ບໍ່ໄດ້ອະທິບາຍ";
+                } else {
+                    return targetVal === "1" ? "ໄດ້ບັນທຶກວັກຊີນທີ່ໄດ້ສັກໄດ້ຢ່າງຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖືກຕ້ອງ";
+                }
             }
             if (qNum === 353) {
-                return targetVal === "1" ? "ໄດ້ກວດຖຶກຕ້ອງ" : "ໄດ້ກວດບໍ່ຖຶກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ເວົ້າອາການສະແດງຖຶກຕ້ອງ" : "ເວົ້າອາການສະແດງບໍ່ຖຶກຕ້ອງ";
+                } else {
+                    return targetVal === "1" ? "ໄດ້ກວດຖຶກຕ້ອງ" : "ໄດ້ກວດບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 354) {
-                return targetVal === "1" ? "ບໍ່ໃຫ້ຖຶກຕ້ອງ" : "ໃຫ້ຖຶກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ແມ່ນ, ເտີບໂຕຊ້າ" : "ບໍ່, ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
+                } else {
+                    return targetVal === "1" ? "ບໍ່ໃຫ້ຖຶກຕ້ອງ" : "ໃຫ້ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 355) {
-                return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ບໍ່ມີປັດໃຈສ່ຽງ" : "ມີປັດໃຈສ່ຽງ";
+                } else {
+                    return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 356) {
                 // Swapped as requested: 1 is negative, 0 is positive
                 const reversedVal = targetVal === "1" ? "0" : "1";
                 return getBaseOppositeText(text, reversedVal);
             }
+            if (qNum === 357) {
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ບົ່ງມະຕິຖຶກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກ";
+                }
+            }
             if (qNum === 359) {
-                return targetVal === "1" ? "ເວົ້າຖຶກຕ້ອງ" : "ເວົ້າບໍ່ຖຶກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ນໍາສົ່ງ" : "ບໍ່ນໍາສົ່ງ";
+                } else {
+                    return targetVal === "1" ? "ເວົ້າຖຶກຕ້ອງ" : "ເວົ້າບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 360) {
-                return targetVal === "1" ? "ແມ່ນ, ເດັກເຕີບໂຕຊ້າ" : "ບໍ່ ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ປິ່ນປົວກ່ອນນໍາສົ່ງ" : "ບໍ່ປິ່ນປົວ";
+                } else {
+                    return targetVal === "1" ? "ແມ່ນ, ເດັກເຕີບໂຕຊ້າ" : "ບໍ່ ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
+                }
             }
             if (qNum === 361) {
-                return targetVal === "1" ? "ມີປັດໃຈສ່ຽງ" : "ບໍ່ມີປັດໃຈສ່ຽງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ໄດ້ອະທິບາຍຜົນການບົ່ງມະຕິ" : "ບໍ່ໄດ້ອະທິບາຍ";
+                } else {
+                    return targetVal === "1" ? "ມີປັດໃຈສ່ຽງ" : "ບໍ່ມີປັດໃຈສ່ຽງ";
+                }
+            }
+            if (qNum === 362) {
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ບັນທຶກຖຶກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 363) {
-                return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ມີ" : "ບໍ່ມີ";
+                } else {
+                    return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 364) {
                 if (isSAMWithComp) {
-                    // Added specifically for SAM with complication as requested: 1 is "ໄດ້ອະທິບາຍ", 0 is "ບໍ່ໄດ້ອະທິບາຍ"
                     return targetVal === "1" ? "ໄດ້ອະທິບາຍ" : "ບໍ່ໄດ້ອະທິບາຍ";
                 } else if (isSAMNoComp) {
                     return targetVal === "1" ? "ຄວາມສ່ຽງປານກາງ" : "ຄວາມສ່ຽງຕໍ່າ, ຄວາມສ່ຽງສູງ";
@@ -428,21 +469,25 @@
                 }
             }
             if (qNum === 366) {
-                if (isSAMNoComp) {
-                    // Reversed as requested specifically for SAM with no complication form
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ແມ່ນແລ້ວ" : "ບໍ່ແມ່ນ";
+                } else if (isSAMNoComp) {
                     return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
                 } else {
                     return targetVal === "1" ? "ໃຫ້ການປິ່ນປົວຖືກຕ້ອງ" : "ໃຫ້ການປິ່ນປົວບໍ່ຖຶກຕ້ອງ";
                 }
             }
             if (qNum === 368) {
-                return targetVal === "1" ? "ບັນທຶກຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
+                if (isSAMWithComp) {
+                    return targetVal === "1" ? "ແມ່ນແລ້ວ" : "ບໍ່";
+                } else {
+                    return targetVal === "1" ? "ບັນທຶກຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 372) {
                 return targetVal === "1" ? "ແມ່ນ" : "ບໍ່ແມ່ນ";
             }
             if (qNum === 376) {
-                // Swapped as requested: 1 is negative, 0 is positive
                 const reversedVal = targetVal === "1" ? "0" : "1";
                 return getBaseOppositeText(text, reversedVal);
             }
@@ -527,17 +572,18 @@
                 }
             }
             
-            const flippedQuestions = [354, 356, 376];
-            let isFlipped = flippedQuestions.includes(qNum);
-            const hasBor = cleanKobo.includes("ບໍ່") || cleanKobo.includes("ບໍ່ຖຶກ") || cleanKobo.includes("ບໍ່ຖືກ");
-            
-            if (isSAMNoComp) {
-                if (qNum === 366) isFlipped = true; // Q366 is Referral for SAM with no complication
-            } else if (isSAMWithComp) {
-                // Keep standard logic
+            // Establish flipped questions list based strictly on active form type
+            let flippedQuestions = [];
+            if (isSAMWithComp) {
+                flippedQuestions = [355, 356, 376];
+            } else if (isSAMNoComp) {
+                flippedQuestions = [354, 356, 366, 376];
             } else {
-                if (qNum === 365) isFlipped = true; // Q365 is Referral for MAM
+                flippedQuestions = [354, 356, 365, 376];
             }
+            
+            const isFlipped = flippedQuestions.includes(qNum);
+            const hasBor = cleanKobo.includes("ບໍ່") || cleanKobo.includes("ບໍ່ຖຶກ") || cleanKobo.includes("ບໍ່ຖືກ");
             
             if (isFlipped) {
                 if (pdfAns === "1" && hasBor) return true;
@@ -809,7 +855,7 @@
                     if (koboAnsRaw !== "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
                         const flippedQuestionsForMAM = [354, 356, 365, 376];
                         const flippedQuestionsForSAMNoComp = [354, 356, 366, 376];
-                        const flippedQuestionsForSAMWithComp = [354, 356, 376];
+                        const flippedQuestionsForSAMWithComp = [355, 356, 376]; // 355 is flipped, 354 is NOT flipped for SAM with complication
                         
                         let flippedQuestions = flippedQuestionsForMAM;
                         if (isSAMNoComplication) flippedQuestions = flippedQuestionsForSAMNoComp;
@@ -895,7 +941,7 @@
 
                     const pageNum = questionPageMap[qNum];
                     if (pageNum) {
-                        const targetPageEl = document.getElementById(`pdf-page-${pageNum}`);
+                        const targetPageEl = document.getElementById('pdf-page-' + pageNum);
                         if (targetPageEl) {
                             targetPageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             targetPageEl.classList.remove('highlight-page');
