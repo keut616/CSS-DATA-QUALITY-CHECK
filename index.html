@@ -249,6 +249,7 @@
         let pdfAnswers = {}; // Human edited PDF answers
         let currentZoom = 100; // Zoom percentage state
         let detectedQuestions = []; // Array of dynamically detected question numbers
+        let isSAMNoComplication = false; // Background state to track form type
 
         // MASTER SESSION DB
         let masterSession = {};
@@ -369,7 +370,9 @@
         }
 
         // Smart Lao Opposites Generator Function
-        function getPDFOppositeText(text, targetVal, qNum) {
+        function getPDFOppositeText(text, targetVal, qNum, isSAMNoCompOverride = null) {
+            const isSAMNoComp = isSAMNoCompOverride !== null ? isSAMNoCompOverride : isSAMNoComplication;
+
             if (qNum === 327) {
                 return targetVal === "1" ? "ບັນທຶກຂໍ້ມູນທັງໝົດຢ່າງຖືກຕ້ອງ" : "ບັນທຶກຂໍ້ມູນບໍ່ຖຶກທັງໝົດ";
             }
@@ -403,7 +406,11 @@
                 return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
             }
             if (qNum === 364) {
-                return targetVal === "1" ? "ຄວາມສ່ຽງຕໍ່າ" : "ຄວາມສ່ຽງກາງ, ຄວາມສ່ຽງສູງ";
+                if (isSAMNoComp) {
+                    return targetVal === "1" ? "ຄວາມສ່ຽງປານກາງ" : "ຄວາມສ່ຽງຕໍ່າ, ຄວາມສ່ຽງສູງ";
+                } else {
+                    return targetVal === "1" ? "ຄວາມສ່ຽງຕໍ່າ" : "ຄວາມສ່ຽງກາງ, ຄວາມສ່ຽງສູງ";
+                }
             }
             if (qNum === 365) {
                 return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
@@ -462,24 +469,33 @@
         }
 
         // Smart Match Logic Validator
-        function checkIsMatch(koboAns, pdfAns, qNum) {
+        function checkIsMatch(koboAns, pdfAns, qNum, isSAMNoCompOverride = null) {
+            const isSAMNoComp = isSAMNoCompOverride !== null ? isSAMNoCompOverride : isSAMNoComplication;
             if (!koboAns || koboAns === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
                 return false;
             }
             
             const cleanKobo = koboAns.trim();
-            const pdfText = getPDFOppositeText(cleanKobo, pdfAns, qNum).trim();
+            const pdfText = getPDFOppositeText(cleanKobo, pdfAns, qNum, isSAMNoComp).trim();
             
             if (pdfText === cleanKobo) {
                 return true;
             }
             
             if (qNum === 364) {
-                const isLowRisk = cleanKobo.includes("ຕໍ່າ");
-                const isHighOrMedRisk = cleanKobo.includes("ກາງ") || cleanKobo.includes("ສູງ");
-                if (pdfAns === "1" && isLowRisk) return true;
-                if (pdfAns === "0" && isHighOrMedRisk) return true;
-                return false;
+                if (isSAMNoComp) {
+                    const isMedRisk = cleanKobo.includes("ກາງ") || cleanKobo.includes("ປານກາງ");
+                    const isLowOrHighRisk = cleanKobo.includes("ຕໍ່າ") || cleanKobo.includes("ສູງ");
+                    if (pdfAns === "1" && isMedRisk) return true;
+                    if (pdfAns === "0" && isLowOrHighRisk) return true;
+                    return false;
+                } else {
+                    const isLowRisk = cleanKobo.includes("ຕໍ່າ");
+                    const isHighOrMedRisk = cleanKobo.includes("ກາງ") || cleanKobo.includes("ສູງ");
+                    if (pdfAns === "1" && isLowRisk) return true;
+                    if (pdfAns === "0" && isHighOrMedRisk) return true;
+                    return false;
+                }
             }
             
             const flippedQuestions = [354, 356, 361, 365];
@@ -616,6 +632,27 @@
                         };
                     }
                 });
+
+                // Smart Detection of SAM with no complication form type
+                isSAMNoComplication = false;
+                const csvFileName = csvFileInput.files[0] ? csvFileInput.files[0].name.toLowerCase() : "";
+                const pdfFileName = pdfFileInput.files[0] ? pdfFileInput.files[0].name.toLowerCase() : "";
+                
+                if (csvFileName.includes("no complication") || csvFileName.includes("no_complication") || 
+                    csvFileName.includes("sam_no") || csvFileName.includes("sam no") || csvFileName.includes("sam without") ||
+                    pdfFileName.includes("no complication") || pdfFileName.includes("no_complication") || 
+                    pdfFileName.includes("sam_no") || pdfFileName.includes("sam no") || pdfFileName.includes("sam without")) {
+                    isSAMNoComplication = true;
+                }
+                
+                if (!isSAMNoComplication && csvHeaders) {
+                    isSAMNoComplication = csvHeaders.some(h => 
+                        h.toLowerCase().includes("no complication") || 
+                        h.toLowerCase().includes("no_complication") || 
+                        h.toLowerCase().includes("sam with no complication") ||
+                        h.toLowerCase().includes("sam without complication")
+                    );
+                }
 
                 // Detect Questions dynamically from headers
                 detectedQuestions = detectQuestionsFromHeaders(csvHeaders);
@@ -890,6 +927,7 @@
                 staffName: staffName,
                 district: staffDistrict,
                 healthCenter: staffHC,
+                isSAMNoComplication: isSAMNoComplication, // Track form type in localStorage database
                 stats: {
                     total: total,
                     matched: matched,
@@ -971,6 +1009,7 @@
                     staffName: activeName,
                     district: activeDistrict,
                     healthCenter: activeHC,
+                    isSAMNoComplication: isSAMNoComplication, // Track form type
                     stats: {
                         total: total,
                         matched: matched,
