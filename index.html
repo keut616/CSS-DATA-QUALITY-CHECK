@@ -307,6 +307,7 @@
             pdfFileInput.click();
         }
 
+        // CSV file trigger
         function triggerCSVUpload() {
             csvFileInput.click();
         }
@@ -384,6 +385,11 @@
             if (qNum === 355) {
                 return targetVal === "1" ? "ຖຶກຕ້ອງ" : "ບໍ່ຖຶກຕ້ອງ";
             }
+            if (qNum === 356) {
+                // Swapped as requested: 1 is negative, 0 is positive
+                const reversedVal = targetVal === "1" ? "0" : "1";
+                return getBaseOppositeText(text, reversedVal);
+            }
             if (qNum === 359) {
                 return targetVal === "1" ? "ເວົ້າຖຶກຕ້ອງ" : "ເວົ້າບໍ່ຖຶກຕ້ອງ";
             }
@@ -412,6 +418,11 @@
                 return targetVal === "1" ? "ແມ່ນ" : "ບໍ່ແມ່ນ";
             }
 
+            return getBaseOppositeText(text, targetVal);
+        }
+
+        // Base text-opposite generator
+        function getBaseOppositeText(text, targetVal) {
             if (!text || text === "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
                 return targetVal === "1" ? "ໄດ້ຮັບ/ມີ" : "ບໍ່ໄດ້ຮັບ/ບໍ່ມີ";
             }
@@ -438,7 +449,7 @@
                 if (negText.startsWith("ໄດ້")) {
                     negText = negText.replace(/^ໄດ້/, "ບໍ່ໄດ້");
                 } else if (negText.startsWith("ຖືກຕ້ອງ")) {
-                    negText = "ບໍ່ + negText";
+                    negText = "ບໍ່" + negText;
                 } else if (negText.startsWith("ມີ")) {
                     negText = negText.replace(/^ມີ/, "ບໍ່ມີ");
                 } else if (negText.startsWith("ແຕ້ມເສັ້ນສະແດງ")) {
@@ -471,7 +482,7 @@
                 return false;
             }
             
-            const flippedQuestions = [354, 361, 365];
+            const flippedQuestions = [354, 356, 361, 365];
             const isFlipped = flippedQuestions.includes(qNum);
             const hasBor = cleanKobo.includes("ບໍ່") || cleanKobo.includes("ບໍ່ຖຶກ") || cleanKobo.includes("ບໍ່ຖືກ");
             
@@ -708,7 +719,7 @@
                     koboAnswers[qNum] = koboAnsRaw;
 
                     if (koboAnsRaw !== "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
-                        const flippedQuestions = [354, 361, 365];
+                        const flippedQuestions = [354, 356, 361, 365];
                         const hasBor = koboAnsRaw.includes("ບໍ່");
                         if (flippedQuestions.includes(qNum)) {
                             pdfAnswers[qNum] = hasBor ? "1" : "0";
