@@ -74,7 +74,7 @@
             <div class="flex items-center space-x-1.5 w-full lg:w-[25%]">
                 <span class="text-[11px] font-bold text-green-800 uppercase whitespace-nowrap">2. Kobo Excel:</span>
                 <div class="relative flex-1 min-w-0">
-                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="handleCSVChange(this)">
+                    <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="triggerCSVUpload(this)">
                     <button type="button" onclick="triggerCSVUpload()" id="excelBtnLabel" class="w-full text-left border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 hover:bg-slate-100 cursor-pointer font-medium text-slate-700 truncate shadow-sm transition-colors">
                         ເລືອກໄຟຣ Excel (.xlsx, .csv)
                     </button>
@@ -350,15 +350,16 @@
             });
         }
 
-        // Dynamic Question Extraction from Kobo Headers
+        // Dynamic Question Extraction from Kobo Headers (Highly Robust 3-Digit Extractor)
         function detectQuestionsFromHeaders(headers) {
             let questions = [];
             headers.forEach(h => {
-                let match = h.match(/^(\d+)(?:\.|\s|_)/);
+                // Extracts any 3-digit sequence between 200-499 regardless of prefix like "q358", "c358", "358", or "nested/358"
+                let match = h.match(/(?:^|[^0-9])(2\d{2}|3\d{2}|4\d{2})(?:[^0-9]|$)/);
                 if (match) {
                     let qNum = parseInt(match[1], 10);
-                    // Ignore administrative metadata fields (101-115) and specifically exclude 208
-                    if (qNum >= 200 && qNum !== 300 && qNum !== 208) { 
+                    // Ignore administrative metadata fields (101-115), specifically exclude 208 and the range 201-207
+                    if (qNum >= 200 && qNum !== 300 && qNum !== 208 && (qNum < 201 || qNum > 207)) { 
                         if (!questions.includes(qNum)) {
                             questions.push(qNum);
                         }
@@ -400,7 +401,7 @@
                 return targetVal === "1" ? "ແມ່ນ, ເດັກເຕີບໂຕຊ້າ" : "ບໍ່ ເດັກບໍ່ມີການເຕີບໂຕຊ້າ";
             }
             if (qNum === 361) {
-                return targetVal === "1" ? "ບໍ່ມີປັດໃຈສ່ຽງ" : "ມີປັດໃຈສ່ຽງ";
+                return targetVal === "1" ? "ມີປັດໃຈສ່ຽງ" : "ບໍ່ມີປັດໃຈສ່ຽງ";
             }
             if (qNum === 363) {
                 return targetVal === "1" ? "ບົ່ງມະຕິຖືກຕ້ອງ" : "ບົ່ງມະຕິບໍ່ຖຶກຕ້ອງ";
@@ -413,16 +414,30 @@
                 }
             }
             if (qNum === 365) {
-                return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
+                if (isSAMNoComp) {
+                    return targetVal === "1" ? "ໄດ້ທົດສອບ" : "ບໍ່ໄດ້ທົດສອບ";
+                } else {
+                    return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
+                }
             }
             if (qNum === 366) {
-                return targetVal === "1" ? "ໃຫ້ການປິ່ນປົວຖືກຕ້ອງ" : "ໃຫ້ການປິ່ນປົວບໍ່ຖຶກຕ້ອງ";
+                if (isSAMNoComp) {
+                    // Reversed as requested specifically for SAM with no complication form
+                    return targetVal === "1" ? "ບໍ່ນໍາສົ່ງ" : "ນໍາສົ່ງ";
+                } else {
+                    return targetVal === "1" ? "ໃຫ້ການປິ່ນປົວຖືກຕ້ອງ" : "ໃຫ້ການປິ່ນປົວບໍ່ຖຶກຕ້ອງ";
+                }
             }
             if (qNum === 368) {
                 return targetVal === "1" ? "ບັນທຶກຖືກຕ້ອງ" : "ບັນທຶກບໍ່ຖຶກຕ້ອງ";
             }
             if (qNum === 372) {
                 return targetVal === "1" ? "ແມ່ນ" : "ບໍ່ແມ່ນ";
+            }
+            if (qNum === 376) {
+                // Swapped as requested: 1 is negative, 0 is positive
+                const reversedVal = targetVal === "1" ? "0" : "1";
+                return getBaseOppositeText(text, reversedVal);
             }
 
             return getBaseOppositeText(text, targetVal);
@@ -498,9 +513,15 @@
                 }
             }
             
-            const flippedQuestions = [354, 356, 361, 365];
-            const isFlipped = flippedQuestions.includes(qNum);
+            const flippedQuestions = [354, 356, 376];
+            let isFlipped = flippedQuestions.includes(qNum);
             const hasBor = cleanKobo.includes("ບໍ່") || cleanKobo.includes("ບໍ່ຖຶກ") || cleanKobo.includes("ບໍ່ຖືກ");
+            
+            if (isSAMNoComp) {
+                if (qNum === 366) isFlipped = true; // Q366 is Referral for SAM with no complication
+            } else {
+                if (qNum === 365) isFlipped = true; // Q365 is Referral for MAM
+            }
             
             if (isFlipped) {
                 if (pdfAns === "1" && hasBor) return true;
@@ -545,7 +566,7 @@
                 
                 const label = document.createElement('div');
                 label.className = "w-full text-[10px] text-slate-400 font-bold border-b border-slate-100 pb-1.5 mb-2 flex justify-between";
-                label.innerHTML = `<span>ເອກະສານສະແກນ</span> <span>ໜ້າທີ ` + pNum + ` / ` + pdf.numPages + `</span>`;
+                label.innerHTML = `<span>\u1eb0\u0e81\u0eb0\u0eaa\u0eb2\u0e99\u0eaa\u0eb0\u0ec1\u0e9count</span> <span>\u0eb0\u0eab\u0e99\u0ec9\u0eb2\u0e97\u0eb5 ` + pNum + ` / ` + pdf.numPages + `</span>`;
                 
                 const canvas = document.createElement('canvas');
                 canvas.className = "w-full h-auto block rounded";
@@ -746,7 +767,8 @@
                 detectedQuestions.forEach(qNum => {
                     let koboAnsRaw = "";
                     let targetHeader = csvHeaders.find(h => {
-                        return new RegExp(`^${qNum}(?:\\.|_|\\s|$)`).test(h);
+                        let match = h.match(/(?:^|[^0-9])(2\d{2}|3\d{2}|4\d{2})(?:[^0-9]|$)/);
+                        return match && parseInt(match[1], 10) === qNum;
                     });
                     if (targetHeader) {
                         koboAnsRaw = targetRow[targetHeader] ? targetRow[targetHeader].toString().trim() : "";
@@ -756,7 +778,7 @@
                     koboAnswers[qNum] = koboAnsRaw;
 
                     if (koboAnsRaw !== "ບໍ່ພົບຂໍ້ມູນໃນ Kobo") {
-                        const flippedQuestions = [354, 356, 361, 365];
+                        const flippedQuestions = [354, 356, 376];
                         const hasBor = koboAnsRaw.includes("ບໍ່");
                         if (flippedQuestions.includes(qNum)) {
                             pdfAnswers[qNum] = hasBor ? "1" : "0";
